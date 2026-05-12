@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="it" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Banca Digitale</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="/_sdk/data_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Playfair+Display:wght@600;700&amp;display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'DM Sans', sans-serif; }
+    .font-display { font-family: 'Playfair Display', serif; }
+    .fade-in { animation: fadeIn 0.4s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .card-hover { transition: all 0.2s ease; }
+    .card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+    .nav-link { position: relative; }
+    .nav-link.active::after { content: ''; position: absolute; bottom: -4px; left: 0; right: 0; height: 2px; background: #1a4d3e; border-radius: 1px; }
+  </style>
+  <style>body { box-sizing: border-box; }</style>
+ </head>
+ <body class="h-full">
+  <div id="app" class="h-full w-full overflow-auto bg-stone-50" style="background: linear-gradient(135deg, #faf9f7 0%, #f0ede8 100%);"><!-- AUTH SCREEN -->
+   <div id="auth-screen" class="h-full flex items-center justify-center p-6">
+    <div class="w-full max-w-md fade-in">
+     <div class="text-center mb-8">
+      <div class="inline-flex items-center gap-3 mb-4">
+       <svg width="44" height="44" viewbox="0 0 44 44" fill="none"><rect width="44" height="44" rx="10" fill="#1a4d3e" /> <path d="M12 32V18L22 12L32 18V32" stroke="#c9a96e" stroke-width="2.5" fill="none" /> <rect x="18" y="22" width="8" height="10" rx="1" stroke="#c9a96e" stroke-width="2" /> <circle cx="22" cy="26" r="1.5" fill="#c9a96e" />
+       </svg><span id="auth-bank-name" class="font-display text-2xl text-stone-800">Banca Digitale</span>
+      </div>
+      <p class="text-stone-500 text-sm">La tua banca, semplice e sicura</p>
+     </div>
+     <div class="bg-white rounded-2xl shadow-sm border border-stone-200 p-8">
+      <div class="flex mb-6 bg-stone-100 rounded-lg p-1"><button id="tab-login" onclick="switchAuthTab('login')" class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all bg-white shadow-sm text-stone-800">Accedi</button> <button id="tab-register" onclick="switchAuthTab('register')" class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all text-stone-500">Registrati</button>
+      </div>
+      <form id="auth-form" onsubmit="handleAuth(event)">
+       <div id="register-name-field" class="mb-4 hidden"><label for="full-name" class="block text-xs font-medium text-stone-600 mb-1.5">Nome completo</label> <input id="full-name" type="text" class="w-full px-4 py-2.5 rounded-lg border border-stone-200 text-sm focus:outline-none focus:border-emerald-800 transition-colors" placeholder="Mario Rossi">
+       </div>
+       <div class="mb-4"><label for="username" class="block text-xs font-medium text-stone-600 mb-1.5">Username</label> <input id="username" type="text" class="w-full px-4 py-2.5 rounded-lg border border-stone-200 text-sm focus:outline-none focus:border-emerald-800 transition-colors" placeholder="mariorossi" required>
+       </div>
+       <div class="mb-6"><label for="password" class="block text-xs font-medium text-stone-600 mb-1.5">Password</label> <input id="password" type="password" class="w-full px-4 py-2.5 rounded-lg border border-stone-200 text-sm focus:outline-none focus:border-emerald-800 transition-colors" placeholder="••••••••" required>
+       </div><button type="submit" id="auth-submit-btn" class="w-full py-3 bg-emerald-900 text-white rounded-lg font-medium text-sm hover:bg-emerald-800 transition-colors">Accedi</button>
+      </form>
+      <p id="auth-error" class="text-red-600 text-xs mt-3 text-center hidden"></p>
+     </div>
+    </div>
+   </div><!-- MAIN APP -->
+   <div id="main-app" class="h-full hidden flex flex-col"><!-- HEADER -->
+    <header class="bg-white border-b border-stone-200 px-6 py-3 flex items-center justify-between shrink-0">
+     <div class="flex items-center gap-3">
+      <svg width="36" height="36" viewbox="0 0 44 44" fill="none"><rect width="44" height="44" rx="10" fill="#1a4d3e" /> <path d="M12 32V18L22 12L32 18V32" stroke="#c9a96e" stroke-width="2.5" fill="none" /> <rect x="18" y="22" width="8" height="10" rx="1" stroke="#c9a96e" stroke-width="2" /> <circle cx="22" cy="26" r="1.5" fill="#c9a96e" />
+      </svg><span id="header-bank-name" class="font-display text-lg text-stone-800">Banca Digitale</span>
+     </div>
+     <nav class="hidden md:flex items-center gap-6"><button onclick="navigate('home')" class="nav-link text-sm font-medium text-stone-700 hover:text-emerald-900 active" data-nav="home">Home</button> <button onclick="navigate('conti')" class="nav-link text-sm font-medium text-stone-700 hover:text-emerald-900" data-nav="conti">Conti</button> <button onclick="navigate('operazioni')" class="nav-link text-sm font-medium text-stone-700 hover:text-emerald-900" data-nav="operazioni">Operazioni</button> <button onclick="navigate('movimenti')" class="nav-link text-sm font-medium text-stone-700 hover:text-emerald-900" data-nav="movimenti">Movimenti</button>
+     </nav>
+     <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-full bg-emerald-900 flex items-center justify-center text-white text-sm font-semibold" id="user-avatar">
+       M
+      </div><button onclick="logout()" class="text-xs text-stone-500 hover:text-red-600 transition-colors font-medium">Esci</button>
+     </div>
+    </header><!-- MOBILE NAV -->
+    <div class="md:hidden flex border-b border-stone-200 bg-white overflow-x-auto shrink-0"><button onclick="navigate('home')" class="px-4 py-2.5 text-xs font-medium text-stone-700 whitespace-nowrap border-b-2 border-emerald-900" data-mobnav="home">Home</button> <button onclick="navigate('conti')" class="px-4 py-2.5 text-xs font-medium text-stone-500 whitespace-nowrap border-b-2 border-transparent" data-mobnav="conti">Conti</button> <button onclick="navigate('operazioni')" class="px-4 py-2.5 text-xs font-medium text-stone-500 whitespace-nowrap border-b-2 border-transparent" data-mobnav="operazioni">Operazioni</button> <button onclick="navigate('movimenti')" class="px-4 py-2.5 text-xs font-medium text-stone-500 whitespace-nowrap border-b-2 border-transparent" data-mobnav="movimenti">Movimenti</button>
+    </div><!-- CONTENT -->
+    <main class="flex-1 overflow-auto p-6"><!-- HOME -->
+     <div id="page-home" class="fade-in max-w-4xl mx-auto">
+      <h1 class="font-display text-2xl text-stone-800 mb-1">Benvenuto, <span id="welcome-name">Mario</span></h1>
+      <p class="text-stone-500 text-sm mb-6">Ecco il riepilogo del tuo conto</p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+       <div class="bg-white rounded-xl p-5 border border-stone-200 card-hover">
+        <p class="text-xs text-stone-500 mb-1">Saldo disponibile</p>
+        <p class="text-2xl font-bold text-stone-800">€ 12.450,00</p>
+       </div>
+       <div class="bg-white rounded-xl p-5 border border-stone-200 card-hover">
+        <p class="text-xs text-stone-500 mb-1">Entrate mese</p>
+        <p class="text-2xl font-bold text-emerald-700">+ € 3.200,00</p>
+       </div>
+       <div class="bg-white rounded-xl p-5 border border-stone-200 card-hover">
+        <p class="text-xs text-stone-500 mb-1">Uscite mese</p>
+        <p class="text-2xl font-bold text-red-600">- € 1.840,00</p>
+       </div>
+      </div>
+      <div class="bg-white rounded-xl p-6 border border-stone-200">
+       <h3 class="font-medium text-stone-800 mb-4">Ultimi movimenti</h3>
+       <div id="home-movements" class="space-y-3">
+        <p class="text-stone-400 text-sm">Nessun movimento registrato</p>
+       </div>
+      </div>
+     </div><!-- CONTI -->
+     <div id="page-conti" class="fade-in max-w-4xl mx-auto hidden">
+      <h1 class="font-display text-2xl text-stone-800 mb-6">I tuoi Conti</h1>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+       <div class="bg-white rounded-xl border border-stone-200 overflow-hidden card-hover">
+        <div class="h-2 bg-emerald-900"></div>
+        <div class="p-5">
+         <div class="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center mb-3"><i data-lucide="landmark" class="w-5 h-5 text-emerald-800"></i>
+         </div>
+         <h3 class="font-semibold text-stone-800 text-sm mb-1">Conto Corrente</h3>
+         <p class="text-xs text-stone-500 mb-3">Canone fisso mensile</p>
+         <p class="text-lg font-bold text-stone-800">€ 3,50/mese</p>
+         <ul class="mt-3 space-y-1 text-xs text-stone-500">
+          <li>• Carta di debito inclusa</li>
+          <li>• Operazioni illimitate</li>
+          <li>• Bonifici gratuiti</li>
+         </ul>
+        </div>
+       </div>
+       <div class="bg-white rounded-xl border border-stone-200 overflow-hidden card-hover">
+        <div class="h-2 bg-amber-600"></div>
+        <div class="p-5">
+         <div class="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center mb-3"><i data-lucide="wallet" class="w-5 h-5 text-amber-700"></i>
+         </div>
+         <h3 class="font-semibold text-stone-800 text-sm mb-1">Conto Zero Canone</h3>
+         <p class="text-xs text-stone-500 mb-3">Senza canone mensile</p>
+         <p class="text-lg font-bold text-stone-800">€ 0,00/mese</p>
+         <ul class="mt-3 space-y-1 text-xs text-stone-500">
+          <li>• Carta di debito €10/anno</li>
+          <li>• 24 operazioni/mese</li>
+          <li>• Bonifici €0,50</li>
+         </ul>
+        </div>
+       </div>
+       <div class="bg-white rounded-xl border border-stone-200 overflow-hidden card-hover">
+        <div class="h-2 bg-violet-600"></div>
+        <div class="p-5">
+         <div class="w-10 h-10 rounded-lg bg-violet-50 flex items-center justify-center mb-3"><i data-lucide="piggy-bank" class="w-5 h-5 text-violet-700"></i>
+         </div>
+         <h3 class="font-semibold text-stone-800 text-sm mb-1">Conto Deposito</h3>
+         <p class="text-xs text-stone-500 mb-3">Risparmio vincolato</p>
+         <p class="text-lg font-bold text-stone-800">3,2% lordo</p>
+         <ul class="mt-3 space-y-1 text-xs text-stone-500">
+          <li>• Vincolo 12/24/36 mesi</li>
+          <li>• Interessi trimestrali</li>
+          <li>• Capitale garantito</li>
+         </ul>
+        </div>
+       </div>
+      </div>
+     </div><!-- OPERAZIONI -->
+     <div id="page-operazioni" class="fade-in max-w-2xl mx-auto hidden">
+      <h1 class="font-display text-2xl text-stone-800 mb-6">Operazioni</h1>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"><button onclick="selectOperation('Versamento')" class="op-btn bg-white rounded-xl border border-stone-200 p-5 text-center card-hover">
+        <div class="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center mx-auto mb-2"><i data-lucide="arrow-down-circle" class="w-5 h-5 text-green-700"></i>
+        </div><span class="text-xs font-medium text-stone-700">Versamento</span> </button> <button onclick="selectOperation('Prelevamento')" class="op-btn bg-white rounded-xl border border-stone-200 p-5 text-center card-hover">
+        <div class="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center mx-auto mb-2"><i data-lucide="arrow-up-circle" class="w-5 h-5 text-red-600"></i>
+        </div><span class="text-xs font-medium text-stone-700">Prelevamento</span> </button> <button onclick="selectOperation('Bonifico')" class="op-btn bg-white rounded-xl border border-stone-200 p-5 text-center card-hover">
+        <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center mx-auto mb-2"><i data-lucide="send" class="w-5 h-5 text-blue-700"></i>
+        </div><span class="text-xs font-medium text-stone-700">Bonifico</span> </button> <button onclick="selectOperation('Giroconto')" class="op-btn bg-white rounded-xl border border-stone-200 p-5 text-center card-hover">
+        <div class="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center mx-auto mb-2"><i data-lucide="repeat" class="w-5 h-5 text-purple-700"></i>
+        </div><span class="text-xs font-medium text-stone-700">Giroconto</span> </button>
+      </div>
+      <div id="operation-form" class="bg-white rounded-xl border border-stone-200 p-6 hidden">
+       <h3 class="font-medium text-stone-800 mb-4" id="op-form-title">Versamento</h3>
+       <form onsubmit="submitOperation(event)">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+         <div><label for="op-data-contabile" class="block text-xs font-medium text-stone-600 mb-1">Data contabile</label> <input id="op-data-contabile" type="date" required class="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:outline-none focus:border-emerald-800">
+         </div>
+         <div><label for="op-data-valuta" class="block text-xs font-medium text-stone-600 mb-1">Data valuta</label> <input id="op-data-valuta" type="date" required class="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:outline-none focus:border-emerald-800">
+         </div>
+        </div>
+        <div class="mb-4"><label for="op-importo" class="block text-xs font-medium text-stone-600 mb-1">Importo (€)</label> <input id="op-importo" type="number" step="0.01" min="0.01" required class="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:outline-none focus:border-emerald-800" placeholder="0,00">
+        </div>
+        <div class="mb-5"><label for="op-descrizione" class="block text-xs font-medium text-stone-600 mb-1">Descrizione</label> <input id="op-descrizione" type="text" class="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:outline-none focus:border-emerald-800" placeholder="Causale operazione">
+        </div><button type="submit" id="op-submit" class="w-full py-2.5 bg-emerald-900 text-white rounded-lg font-medium text-sm hover:bg-emerald-800 transition-colors">Conferma operazione</button>
+       </form>
+       <p id="op-success" class="text-green-700 text-xs mt-3 text-center hidden">Operazione registrata con successo!</p>
+      </div>
+     </div><!-- MOVIMENTI -->
+     <div id="page-movimenti" class="fade-in max-w-4xl mx-auto hidden">
+      <h1 class="font-display text-2xl text-stone-800 mb-6">Movimenti</h1>
+      <div class="bg-white rounded-xl border border-stone-200 overflow-hidden">
+       <div class="overflow-x-auto">
+        <table class="w-full">
+         <thead class="bg-stone-50 border-b border-stone-200">
+          <tr>
+           <th class="text-left px-5 py-3 text-xs font-semibold text-stone-600">Data contabile</th>
+           <th class="text-left px-5 py-3 text-xs font-semibold text-stone-600">Data valuta</th>
+           <th class="text-left px-5 py-3 text-xs font-semibold text-stone-600">Operazione</th>
+           <th class="text-right px-5 py-3 text-xs font-semibold text-stone-600">Importo</th>
+          </tr>
+         </thead>
+         <tbody id="movements-table">
+          <tr>
+           <td colspan="4" class="px-5 py-8 text-center text-stone-400 text-sm">Nessun movimento registrato</td>
+          </tr>
+         </tbody>
+        </table>
+       </div>
+      </div>
+     </div>
+    </main>
+   </div>
+  </div>
+  <script>
+  // State
+  let currentUser = null;
+  let authMode = 'login';
+  let currentPage = 'home';
+  let selectedOp = '';
+  let allData = [];
+  let users = [];
+  let movements = [];
+
+  const defaultConfig = {
+    bank_name: 'Banca Digitale',
+    background_color: '#faf9f7',
+    surface_color: '#ffffff',
+    text_color: '#1c1917',
+    primary_action_color: '#1a4d3e',
+    secondary_action_color: '#c9a96e',
+    font_family: 'DM Sans',
+    font_size: 14
+  };
+
+  // Element SDK
+  window.elementSdk.init({
+    defaultConfig,
+    onConfigChange: async (config) => {
+      const name = config.bank_name || defaultConfig.bank_name;
+      const el1 = document.getElementById('auth-bank-name');
+      const el2 = document.getElementById('header-bank-name');
+      if (el1) el1.textContent = name;
+      if (el2) el2.textContent = name;
+
+      const font = config.font_family || defaultConfig.font_family;
+      document.body.style.fontFamily = `${font}, DM Sans, sans-serif`;
+
+      const bg = config.background_color || defaultConfig.background_color;
+      document.getElementById('app').style.background = bg;
+
+      const primary = config.primary_action_color || defaultConfig.primary_action_color;
+      document.querySelectorAll('[data-nav]').forEach(el => {
+        if (el.classList.contains('active')) el.style.color = primary;
+      });
+    },
+    mapToCapabilities: (config) => ({
+      recolorables: [
+        { get: () => config.background_color || defaultConfig.background_color, set: (v) => { config.background_color = v; window.elementSdk.setConfig({ background_color: v }); } },
+        { get: () => config.surface_color || defaultConfig.surface_color, set: (v) => { config.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); } },
+        { get: () => config.text_color || defaultConfig.text_color, set: (v) => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); } },
+        { get: () => config.primary_action_color || defaultConfig.primary_action_color, set: (v) => { config.primary_action_color = v; window.elementSdk.setConfig({ primary_action_color: v }); } },
+        { get: () => config.secondary_action_color || defaultConfig.secondary_action_color, set: (v) => { config.secondary_action_color = v; window.elementSdk.setConfig({ secondary_action_color: v }); } }
+      ],
+      borderables: [],
+      fontEditable: { get: () => config.font_family || defaultConfig.font_family, set: (v) => { config.font_family = v; window.elementSdk.setConfig({ font_family: v }); } },
+      fontSizeable: { get: () => config.font_size || defaultConfig.font_size, set: (v) => { config.font_size = v; window.elementSdk.setConfig({ font_size: v }); } }
+    }),
+    mapToEditPanelValues: (config) => new Map([
+      ['bank_name', config.bank_name || defaultConfig.bank_name]
+    ])
+  });
+
+  // Data SDK
+  const dataHandler = {
+    onDataChanged(data) {
+      allData = data;
+      users = data.filter(d => d.type === 'user');
+      movements = data.filter(d => d.type === 'movement' && d.username === (currentUser || ''));
+      renderMovements();
+    }
+  };
+
+  (async () => {
+    await window.dataSdk.init(dataHandler);
+  })();
+
+  function renderMovements() {
+    const sorted = [...movements].sort((a, b) => (b.data_contabile || '').localeCompare(a.data_contabile || ''));
+    const table = document.getElementById('movements-table');
+    const homeDiv = document.getElementById('home-movements');
+
+    if (sorted.length === 0) {
+      table.innerHTML = '<tr><td colspan="4" class="px-5 py-8 text-center text-stone-400 text-sm">Nessun movimento registrato</td></tr>';
+      homeDiv.innerHTML = '<p class="text-stone-400 text-sm">Nessun movimento registrato</p>';
+      return;
+    }
+
+    table.innerHTML = sorted.map(m => {
+      const isPositive = m.tipo_operazione === 'Versamento';
+      return `<tr class="border-b border-stone-100 last:border-0">
+        <td class="px-5 py-3 text-sm text-stone-700">${m.data_contabile || '-'}</td>
+        <td class="px-5 py-3 text-sm text-stone-700">${m.data_valuta || '-'}</td>
+        <td class="px-5 py-3 text-sm text-stone-700">${m.tipo_operazione || '-'}</td>
+        <td class="px-5 py-3 text-sm text-right font-medium ${isPositive ? 'text-green-700' : 'text-red-600'}">${isPositive ? '+' : '-'} € ${Number(m.importo || 0).toFixed(2)}</td>
+      </tr>`;
+    }).join('');
+
+    homeDiv.innerHTML = sorted.slice(0, 5).map(m => {
+      const isPositive = m.tipo_operazione === 'Versamento';
+      return `<div class="flex justify-between items-center py-2 border-b border-stone-50 last:border-0">
+        <div><span class="text-sm text-stone-700">${m.tipo_operazione}</span><span class="text-xs text-stone-400 ml-2">${m.data_contabile}</span></div>
+        <span class="text-sm font-medium ${isPositive ? 'text-green-700' : 'text-red-600'}">${isPositive ? '+' : '-'} € ${Number(m.importo || 0).toFixed(2)}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // Auth
+  function switchAuthTab(mode) {
+    authMode = mode;
+    const loginTab = document.getElementById('tab-login');
+    const regTab = document.getElementById('tab-register');
+    const nameField = document.getElementById('register-name-field');
+    const btn = document.getElementById('auth-submit-btn');
+    document.getElementById('auth-error').classList.add('hidden');
+
+    if (mode === 'login') {
+      loginTab.className = 'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all bg-white shadow-sm text-stone-800';
+      regTab.className = 'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all text-stone-500';
+      nameField.classList.add('hidden');
+      btn.textContent = 'Accedi';
+    } else {
+      regTab.className = 'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all bg-white shadow-sm text-stone-800';
+      loginTab.className = 'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all text-stone-500';
+      nameField.classList.remove('hidden');
+      btn.textContent = 'Registrati';
+    }
+  }
+
+  async function handleAuth(e) {
+    e.preventDefault();
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const errEl = document.getElementById('auth-error');
+    errEl.classList.add('hidden');
+
+    if (authMode === 'register') {
+      const fullName = document.getElementById('full-name').value.trim();
+      if (!fullName) { showAuthError('Inserisci il nome completo'); return; }
+      const exists = users.find(u => u.username === username);
+      if (exists) { showAuthError('Username già in uso'); return; }
+      if (allData.length >= 999) { showAuthError('Limite dati raggiunto'); return; }
+
+      const btn = document.getElementById('auth-submit-btn');
+      btn.textContent = 'Registrazione...'; btn.disabled = true;
+      const res = await window.dataSdk.create({ type: 'user', username, password, full_name: fullName });
+      btn.textContent = 'Registrati'; btn.disabled = false;
+
+      if (res.isOk) {
+        currentUser = username;
+        enterApp(fullName);
+      } else { showAuthError('Errore durante la registrazione'); }
+    } else {
+      const user = users.find(u => u.username === username && u.password === password);
+      if (!user) { showAuthError('Credenziali non valide'); return; }
+      currentUser = username;
+      enterApp(user.full_name || username);
+    }
+  }
+
+  function showAuthError(msg) {
+    const el = document.getElementById('auth-error');
+    el.textContent = msg;
+    el.classList.remove('hidden');
+  }
+
+  function enterApp(name) {
+    document.getElementById('auth-screen').classList.add('hidden');
+    document.getElementById('main-app').classList.remove('hidden');
+    document.getElementById('welcome-name').textContent = name;
+    document.getElementById('user-avatar').textContent = (name || 'U')[0].toUpperCase();
+    movements = allData.filter(d => d.type === 'movement' && d.username === currentUser);
+    renderMovements();
+  }
+
+  function logout() {
+    currentUser = null;
+    document.getElementById('main-app').classList.add('hidden');
+    document.getElementById('auth-screen').classList.remove('hidden');
+    document.getElementById('username').value = '';
+    document.getElementById('password').value = '';
+    document.getElementById('full-name').value = '';
+  }
+
+  // Navigation
+  function navigate(page) {
+    currentPage = page;
+    ['home','conti','operazioni','movimenti'].forEach(p => {
+      document.getElementById('page-' + p).classList.toggle('hidden', p !== page);
+    });
+    document.querySelectorAll('[data-nav]').forEach(el => {
+      el.classList.toggle('active', el.dataset.nav === page);
+    });
+    document.querySelectorAll('[data-mobnav]').forEach(el => {
+      if (el.dataset.mobnav === page) {
+        el.className = 'px-4 py-2.5 text-xs font-medium text-stone-700 whitespace-nowrap border-b-2 border-emerald-900';
+      } else {
+        el.className = 'px-4 py-2.5 text-xs font-medium text-stone-500 whitespace-nowrap border-b-2 border-transparent';
+      }
+    });
+  }
+
+  // Operations
+  function selectOperation(op) {
+    selectedOp = op;
+    document.getElementById('operation-form').classList.remove('hidden');
+    document.getElementById('op-form-title').textContent = op;
+    document.getElementById('op-success').classList.add('hidden');
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('op-data-contabile').value = today;
+    document.getElementById('op-data-valuta').value = today;
+  }
+
+  async function submitOperation(e) {
+    e.preventDefault();
+    if (allData.length >= 999) {
+      document.getElementById('op-success').textContent = 'Limite dati raggiunto';
+      document.getElementById('op-success').classList.remove('hidden');
+      return;
+    }
+
+    const btn = document.getElementById('op-submit');
+    btn.textContent = 'Elaborazione...'; btn.disabled = true;
+
+    const record = {
+      type: 'movement',
+      username: currentUser,
+      data_contabile: document.getElementById('op-data-contabile').value,
+      data_valuta: document.getElementById('op-data-valuta').value,
+      tipo_operazione: selectedOp,
+      importo: parseFloat(document.getElementById('op-importo').value),
+      descrizione: document.getElementById('op-descrizione').value
+    };
+
+    const res = await window.dataSdk.create(record);
+    btn.textContent = 'Conferma operazione'; btn.disabled = false;
+
+    if (res.isOk) {
+      const msg = document.getElementById('op-success');
+      msg.textContent = 'Operazione registrata con successo!';
+      msg.classList.remove('hidden');
+      document.getElementById('op-importo').value = '';
+      document.getElementById('op-descrizione').value = '';
+      setTimeout(() => msg.classList.add('hidden'), 3000);
+    }
+  }
+
+  lucide.createIcons();
+</script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9f7e566492ebea3f',t:'MTc3ODEzNzExOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
