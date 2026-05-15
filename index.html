@@ -72,7 +72,7 @@
           <span id="authSubmitLabel">Accedi</span>
         </button>
 
-        <p class="auth-hint" id="authHint">Credenziali demo: admin / admin</p>
+        <p class="auth-hint" id="authHint">Inserisci le tue credenziali</p>
       </form>
     </div>
   </div>
@@ -107,7 +107,8 @@
           </span>
         </button>
 
-        <button id="profileBtn" class="avatar-btn" title="Profilo">
+        <!-- (11) type="button" aggiunto -->
+        <button id="profileBtn" class="avatar-btn" title="Profilo" type="button">
           <span id="avatarInitials">--</span>
         </button>
 
@@ -115,8 +116,21 @@
       </div>
     </header>
 
-    <main class="main-area">
+    <!-- (11) Dropdown profilo -->
+    <div id="profileDropdown" class="profile-dropdown hidden" aria-hidden="true">
+      <div class="profile-dd-head">
+        <div id="profileDdName" class="profile-dd-name">—</div>
+        <div class="profile-dd-sub">
+          Piano: <strong id="profileDdPlan">—</strong>
+        </div>
+      </div>
+      <div class="profile-dd-actions">
+        <button id="openProfileModalBtn" type="button">Modifica profilo</button>
+        <button id="logoutFromMenuBtn" type="button" class="danger">Esci</button>
+      </div>
+    </div>
 
+    <main class="main-area">
       <!-- HOME -->
       <section id="page-home" class="page active">
         <div class="home-head">
@@ -130,7 +144,6 @@
             <span>Saldo totale</span>
             <div class="balance-row">
               <strong id="totalBalance" class="balance-value">€ 0,00</strong>
-
               <button
                 id="toggleBalanceBtn"
                 class="balance-eye"
@@ -157,7 +170,11 @@
             <h2>Gestione Conti</h2>
             <p class="sub">Apertura e consultazione conti correnti e deposito.</p>
           </div>
-          <button id="createAccountBtn" class="btn-main small">+ Nuovo conto</button>
+
+          <div class="accounts-actions">
+            <button id="editAccountBtn" class="btn-ghost small" disabled>Modifica conto</button>
+            <button id="createAccountBtn" class="btn-main small">+ Nuovo conto</button>
+          </div>
         </div>
 
         <div class="accounts-area">
@@ -173,7 +190,7 @@
         </div>
 
         <div id="accountFormWrap" class="account-form hidden">
-          <div class="form-title">Apertura nuovo conto</div>
+          <div class="form-title" id="accountFormTitle">Apertura nuovo conto</div>
           <div class="form-grid">
             <div class="form-group">
               <label>Nome conto</label>
@@ -237,9 +254,256 @@
         </div>
       </section>
 
-      <!-- ALTRE SEZIONI -->
+      <!-- CARTE -->
       <section id="page-carte" class="page">
-        <h2>Carte</h2>
+        <div class="cards-header">
+          <div>
+            <h2>Carte</h2>
+            <p class="sub">Gestione professionale delle tue carte e richieste.</p>
+          </div>
+          <div class="cards-badges">
+            <span id="planBadge" class="badge secure">BASIC</span>
+            <span id="cardStatusBadge" class="badge live">Attiva</span>
+          </div>
+        </div>
+
+        <div class="cards-layout">
+          <!-- LE MIE CARTE -->
+          <section class="cards-panel">
+            <div class="panel-title">Le mie carte</div>
+
+            <div id="cardsList" class="cards-list"></div>
+
+            <div id="cardDetail" class="card-detail">
+              <div class="card-stage">
+                <div class="card-3d" id="card3d">
+                  <div class="card-face card-front" id="cardFront">
+                    <div class="card-brand">
+                      <!-- (2) Brand premium -->
+                      <span class="brand brand-premium">AFTBank</span>
+                    </div>
+
+                    <div class="card-chip"></div>
+
+                    <div class="card-number">
+                      <!-- (2) PAN completo con occhio toggle -->
+                      <span id="cardNumber">5342 1984 7741 4821</span>
+                      <button class="tiny-eye" id="toggleCardNumber" type="button" title="Nascondi/Mostra numero"></button>
+                    </div>
+
+                    <div class="card-row">
+                      <div class="card-holder">
+                        <small>Nome</small>
+                        <span id="cardHolder">MARIO ROSSI</span>
+                      </div>
+                      <div class="card-exp">
+                        <small>Scadenza</small>
+                        <span id="cardExpiry">09/29</span>
+                        <!-- (3) Occhio scadenza -->
+                        <button class="tiny-eye" id="toggleExpiry" type="button" title="Nascondi/Mostra scadenza"></button>
+                      </div>
+                    </div>
+
+                    <div class="card-logo">
+                      <img src="mastercard.png" alt="Mastercard" class="mc-logo" />
+                    </div>
+
+                    <div class="card-reflection"></div>
+                  </div>
+
+                  <div class="card-face card-back">
+                    <div class="magnetic"></div>
+                    <div class="sign">
+                      <!-- (4) Testo in italiano, CVC sempre visibile (no toggle separato sul retro) -->
+                      <span>Firma autorizzata</span>
+                      <div class="cvc-box">
+                        <span id="cardCVC">493</span>
+                      </div>
+                    </div>
+                    <div class="anti">Anti‑Screenshot Attivo</div>
+                  </div>
+                </div>
+
+                <div class="card-actions">
+                  <button id="flipCardBtn" class="btn-ghost" type="button">Mostra retro</button>
+                  <!-- (countdown) mostra — invece di 00 -->
+                  <div class="countdown" id="cvcCountdown">—</div>
+                </div>
+              </div>
+
+              <div class="card-controls">
+                <div class="control">
+                  <span>Freeze</span>
+                  <button id="freezeBtn" class="toggle-pill"><span></span></button>
+                </div>
+                <div class="control">
+                  <span>Stato carta</span>
+                  <span id="cardStateText" class="badge">Attiva</span>
+                </div>
+                <div class="control">
+                  <span>Limite giornaliero</span>
+                  <strong id="limitDay">€ 0</strong>
+                </div>
+                <div class="control">
+                  <span>Limite online</span>
+                  <strong id="limitOnline">€ 0</strong>
+                </div>
+                <div class="control">
+                  <span>Contactless</span>
+                  <span id="contactlessBadge" class="badge live">Attivo</span>
+                </div>
+                <div class="control">
+                  <span>Sicurezza online</span>
+                  <span id="secureOnlineBadge" class="badge live">Attiva</span>
+                </div>
+                <div class="control">
+                  <span>Virtual card collegata</span>
+                  <span id="virtualLinked" class="badge">Attiva</span>
+                </div>
+                <div class="control">
+                  <span>Blocco carta</span>
+                  <button id="blockBtn" class="btn-ghost danger">Blocca</button>
+                </div>
+                <div class="control">
+                  <span>Sostituzione</span>
+                  <button id="replaceBtn" class="btn-ghost small">Richiedi nuova</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="skeleton-area" id="cardsSkeleton">
+              <div class="skeleton title"></div>
+              <div class="skeleton line"></div>
+              <div class="skeleton line"></div>
+            </div>
+          </section>
+
+          <!-- RICHIEDI NUOVA CARTA — (6) Accordion -->
+          <section class="cards-panel">
+            <button id="requestAccordionBtn" class="accordion-bar" type="button" aria-expanded="false">
+              <span>Richiedi nuova carta</span>
+              <span id="accordionChevron" class="chevron"></span>
+            </button>
+
+            <div id="requestPanel" class="request-panel is-collapsed" aria-hidden="true">
+
+              <div class="request-steps">
+                <div class="step active" data-step="1">1. Piano</div>
+                <div class="step" data-step="2">2. Dati</div>
+                <div class="step" data-step="3">3. Verifica</div>
+              </div>
+
+              <!-- STEP 1 -->
+              <div class="request-step active" id="requestStep1">
+                <div class="plans request">
+                  <div class="plan-card plan-basic" data-plan="BASIC">
+                    <div class="plan-title">BASIC</div>
+                    <div class="plan-price">Gratis</div>
+                    <ul>
+                      <li>Virtual card inclusa</li>
+                      <li>Pagamenti online</li>
+                      <li>Limiti base</li>
+                      <li>Supporto standard</li>
+                    </ul>
+                    <button class="btn-main select-plan" data-plan="BASIC" type="button">Seleziona</button>
+                  </div>
+
+                  <div class="plan-card plan-silver" data-plan="SILVER">
+                    <div class="plan-title">SILVER</div>
+                    <div class="plan-price">€4.99/mese</div>
+                    <ul>
+                      <li>Carta fisica + virtuale</li>
+                      <li>Pagamenti contactless</li>
+                      <li>Limiti più alti</li>
+                      <li>Supporto prioritario</li>
+                    </ul>
+                    <button class="btn-main select-plan" data-plan="SILVER" type="button">Seleziona</button>
+                  </div>
+
+                  <div class="plan-card plan-gold" data-plan="GOLD">
+                    <div class="plan-title">GOLD</div>
+                    <div class="plan-price">€14.99/mese</div>
+                    <ul>
+                      <li>Cashback premium</li>
+                      <li>Assicurazione viaggi</li>
+                      <li>Limiti massimi</li>
+                      <li>Supporto VIP</li>
+                    </ul>
+                    <button class="btn-main select-plan" data-plan="GOLD" type="button">Seleziona</button>
+                  </div>
+                </div>
+
+                <div class="form-actions">
+                  <button id="reqNext1" class="btn-main" type="button" disabled>Avanti</button>
+                </div>
+              </div>
+
+              <!-- STEP 2 -->
+              <div class="request-step" id="requestStep2">
+                <form id="cardRequestFormStep2" class="request-form">
+                  <div class="form-grid">
+                    <div class="form-group">
+                      <label>Nome e cognome titolare</label>
+                      <input type="text" id="reqFullName" placeholder="Mario Rossi"/>
+                    </div>
+
+                    <div class="form-group">
+                      <label>Tipo carta</label>
+                      <select id="reqCardType">
+                        <option value="">Seleziona</option>
+                        <option value="virtuale">Virtuale</option>
+                        <option value="fisica">Fisica</option>
+                      </select>
+                    </div>
+
+                    <div class="form-group" id="reqShipWrap" style="display:none;">
+                      <label>Indirizzo spedizione</label>
+                      <input type="text" id="reqShipAddress" placeholder="Via Roma 10, 00100 Roma (RM)"/>
+                    </div>
+                  </div>
+
+                  <div class="form-actions">
+                    <button id="reqBack2" class="btn-ghost" type="button">Indietro</button>
+                    <button id="reqNext2" class="btn-main" type="submit">Avanti</button>
+                  </div>
+                </form>
+              </div>
+
+              <!-- STEP 3 -->
+              <div class="request-step" id="requestStep3">
+                <div class="verify-card">
+                  <div class="verify-row"><span>Piano</span><strong id="verifyPlan">—</strong></div>
+                  <div class="verify-row"><span>Titolare</span><strong id="verifyName">—</strong></div>
+                  <div class="verify-row"><span>Tipo</span><strong id="verifyType">—</strong></div>
+                  <div class="verify-row"><span>Costo mensile</span><strong id="verifyPrice">—</strong></div>
+                </div>
+
+                <div class="form-actions">
+                  <button id="reqBack3" class="btn-ghost" type="button">Indietro</button>
+                  <button id="reqConfirm" class="btn-main" type="button">Conferma Richiesta</button>
+                </div>
+
+                <div id="verifyDoneMsg" class="verify-done hidden">
+                  ✅ Verifica completata! La tua nuova carta è in arrivo.
+                </div>
+              </div>
+
+              <div id="requestStatus" class="request-status hidden">
+                <div class="status-card">
+                  <div class="status-title">Stato richiesta</div>
+                  <div id="requestState">In verifica</div>
+                  <div class="status-bar">
+                    <span class="dot active"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                  </div>
+                  <div class="status-note" id="requestNote">Verifica dati in corso…</div>
+                </div>
+              </div>
+
+            </div>
+          </section>
+        </div>
       </section>
 
       <section id="page-operazioni" class="page">
@@ -263,15 +527,36 @@
     </footer>
   </div>
 
-  <!-- COOKIE -->
   <div id="cookieBanner" class="cookie-banner">
     <div>
-      Questo sito utilizza cookie tecnici per il funzionamento. Proseguendo accetti l’uso dei cookie.
+      Questo sito utilizza cookie tecnici per il funzionamento. Proseguendo accetti l'uso dei cookie.
     </div>
     <button id="acceptCookiesBtn" class="btn-main small">Chiudi</button>
   </div>
 
-  <!-- MODAL PROFILO -->
+  <!-- MODAL AUTH CVC -->
+  <div id="authModal" class="modal" style="display:none;">
+    <div class="modal-box wide">
+      <h3>Conferma identità</h3>
+      <p class="muted">Per mostrare il CVC conferma l'identità.</p>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="authConfirmPass" placeholder="Inserisci password"/>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="confirmAuth">Conferma</button>
+        <button id="closeAuth">Annulla</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast">Salvato</div>
+
   <div id="profileModal" class="modal" style="display:none;">
     <div class="modal-box wide">
       <h3>Profilo utente</h3>
