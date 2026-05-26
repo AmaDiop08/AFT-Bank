@@ -26,49 +26,99 @@
       </div>
 
       <form onsubmit="handleAuth(event)">
-        <div class="form-group" id="fieldNome" style="display:none;">
-          <label>Nome</label>
-          <input type="text" id="authNome" placeholder="Mario"/>
+        <div class="auth-steps" id="authSteps" style="display:none;">
+          <div class="step active" data-step="1">1. Anagrafica</div>
+          <div class="step" data-step="2">2. Contatti</div>
+          <div class="step" data-step="3">3. Accesso</div>
         </div>
 
-        <div class="form-group" id="fieldCognome" style="display:none;">
-          <label>Cognome</label>
-          <input type="text" id="authCognome" placeholder="Rossi"/>
+        <div id="loginFields">
+          <div class="form-group">
+            <label class="required">Username</label>
+            <input type="text" id="authUser" placeholder="mariorossi"/>
+          </div>
+
+          <div class="form-group">
+            <label class="required">Password</label>
+            <input type="password" id="authPass" placeholder="••••••••"/>
+          </div>
+
+          <div class="password-toggle">
+            <input type="checkbox" id="toggleLoginPass" />
+            <label for="toggleLoginPass">Mostra password</label>
+            <span class="peeky" aria-hidden="true">
+              <span class="peek-eye"></span>
+              <span class="peek-eye"></span>
+            </span>
+          </div>
         </div>
 
-        <div class="form-group" id="fieldNascita" style="display:none;">
-          <label>Data di nascita</label>
-          <input type="date" id="authNascita"/>
+        <div class="auth-step active" id="authStep1" style="display:none;">
+          <div class="form-group" id="fieldNome">
+            <label class="required">Nome</label>
+            <input type="text" id="authNome" placeholder="Mario"/>
+          </div>
+
+          <div class="form-group" id="fieldCognome">
+            <label class="required">Cognome</label>
+            <input type="text" id="authCognome" placeholder="Rossi"/>
+          </div>
+
+          <div class="form-group" id="fieldNascita">
+            <label>Data di nascita</label>
+            <input type="date" id="authNascita"/>
+          </div>
+
+          <div class="form-group with-status" id="fieldEmail">
+            <label class="required">Email</label>
+            <input type="email" id="authEmail" placeholder="nome@email.com"/>
+            <span id="authEmailStatus" class="field-status neutral">—</span>
+          </div>
+
+          <div class="form-actions">
+            <button id="authNext1" class="btn-main" type="button">Avanti</button>
+          </div>
         </div>
 
-        <div class="form-group" id="fieldEmail" style="display:none;">
-          <label>Email</label>
-          <input type="email" id="authEmail" placeholder="nome@email.com"/>
+        <div class="auth-step" id="authStep2" style="display:none;">
+          <div class="form-group" id="fieldVia">
+            <label>Via di residenza</label>
+            <input type="text" id="authVia" placeholder="Via Roma 10"/>
+          </div>
+
+          <div class="form-group with-status" id="fieldCF">
+            <label>Codice fiscale</label>
+            <input type="text" id="authCF" placeholder="RSSMRA80A01H501Z" maxlength="16"/>
+            <span id="authCFStatus" class="field-status neutral">—</span>
+          </div>
+
+          <div class="form-actions">
+            <button id="authBack2" class="btn-ghost" type="button">Indietro</button>
+            <button id="authNext2" class="btn-main" type="button">Avanti</button>
+          </div>
         </div>
 
-        <div class="form-group" id="fieldVia" style="display:none;">
-          <label>Via di residenza</label>
-          <input type="text" id="authVia" placeholder="Via Roma 10"/>
-        </div>
+        <div class="auth-step" id="authStep3" style="display:none;">
+          <div class="form-group">
+            <label class="required">Username</label>
+            <input type="text" id="authUserReg" placeholder="mariorossi"/>
+          </div>
 
-        <div class="form-group" id="fieldCF" style="display:none;">
-          <label>Codice fiscale</label>
-          <input type="text" id="authCF" placeholder="RSSMRA80A01H501Z" maxlength="16"/>
-        </div>
+          <div class="form-group">
+            <label class="required">Password</label>
+            <input type="password" id="authPassReg" placeholder="••••••••"/>
+          </div>
 
-        <div class="form-group">
-          <label>Username</label>
-          <input type="text" id="authUser" placeholder="mariorossi"/>
-        </div>
-
-        <div class="form-group">
-          <label>Password</label>
-          <input type="password" id="authPass" placeholder="••••••••"/>
+          <div class="form-actions">
+            <button id="authBack3" class="btn-ghost" type="button">Indietro</button>
+            <button class="btn-main" type="submit">Crea account</button>
+          </div>
         </div>
 
         <p class="auth-error" id="authError"></p>
+        <div class="required-note">* Campo obbligatorio</div>
 
-        <button class="btn-main" type="submit">
+        <button id="loginSubmit" class="btn-main" type="submit">
           <span id="authSubmitLabel">Accedi</span>
         </button>
 
@@ -107,7 +157,6 @@
           </span>
         </button>
 
-        <!-- (11) type="button" aggiunto -->
         <button id="profileBtn" class="avatar-btn" title="Profilo" type="button">
           <span id="avatarInitials">--</span>
         </button>
@@ -116,13 +165,9 @@
       </div>
     </header>
 
-    <!-- (11) Dropdown profilo -->
     <div id="profileDropdown" class="profile-dropdown hidden" aria-hidden="true">
       <div class="profile-dd-head">
         <div id="profileDdName" class="profile-dd-name">—</div>
-        <div class="profile-dd-sub">
-          Piano: <strong id="profileDdPlan">—</strong>
-        </div>
       </div>
       <div class="profile-dd-actions">
         <button id="openProfileModalBtn" type="button">Modifica profilo</button>
@@ -137,30 +182,59 @@
           <div>
             <h2 id="greetText">Buongiorno,</h2>
             <h1 id="greetName">Utente</h1>
-            <p class="home-note">Riepilogo generale dei tuoi dati bancari.</p>
+            <p class="home-note">Ecco il riepilogo del tuo conto</p>
           </div>
 
           <div class="home-balance-line">
             <span>Saldo totale</span>
             <div class="balance-row">
               <strong id="totalBalance" class="balance-value">€ 0,00</strong>
-              <button
-                id="toggleBalanceBtn"
-                class="balance-eye"
-                aria-label="Nascondi saldo"
-                title="Nascondi saldo"
-              >
+              <button id="toggleBalanceBtn" class="balance-eye" aria-label="Nascondi saldo" title="Nascondi saldo">
                 <span class="eye-icon"></span>
               </button>
             </div>
           </div>
         </div>
 
-        <div class="mini-stats big">
-          <div><small>Entrate mese</small><span id="statIn">€ 0,00</span></div>
-          <div><small>Uscite mese</small><span id="statOut">€ 0,00</span></div>
-          <div><small>Operazioni</small><span id="statOps">0</span></div>
+        <!-- BARRE ENTRATE/USCITE/OPERAZIONI -->
+        <div class="home-summary-bar">
+          <div class="home-summary-item">
+            <div class="summary-label">ENTRATE MESE</div>
+            <div id="homeEntrateMese" class="summary-value pos">€ 0,00</div>
+          </div>
+          <div class="summary-divider"></div>
+          <div class="home-summary-item">
+            <div class="summary-label">USCITE MESE</div>
+            <div id="homeUsciteMese" class="summary-value neg">€ 0,00</div>
+          </div>
+          <div class="summary-divider"></div>
+          <div class="home-summary-item">
+            <div class="summary-label">SALDO MESE</div>
+            <div id="homeMonthNet" class="summary-value">€ 0,00</div>
+          </div>
         </div>
+
+        <div class="home-glance">
+          <div class="glance-card">
+            <div class="glance-title">Ultimo accesso</div>
+            <div id="homeLastAccess" class="glance-main">—</div>
+            <div id="homeLastAccessSub" class="glance-sub">Accesso web</div>
+          </div>
+
+          <div class="glance-card">
+            <div class="glance-title">Spese per categoria</div>
+            <div class="pie-wrap">
+              <div id="homePie" class="pie"></div>
+              <div id="homePieLegend" class="pie-legend"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="home-last-mov">
+          <div class="list-title">Ultimi movimenti</div>
+          <div id="homeLastMovements" class="last-mov-list"></div>
+        </div>
+
       </section>
 
       <!-- CONTI -->
@@ -170,88 +244,136 @@
             <h2>Gestione Conti</h2>
             <p class="sub">Apertura e consultazione conti correnti e deposito.</p>
           </div>
+        </div>
 
-          <div class="accounts-actions">
-            <button id="editAccountBtn" class="btn-ghost small" disabled>Modifica conto</button>
-            <button id="createAccountBtn" class="btn-main small">+ Nuovo conto</button>
+        <div class="conti-summary">
+          <div class="conti-card">
+            <small>Saldo totale</small>
+            <strong id="contiSummaryBalance">€ 0,00</strong>
+          </div>
+          <div class="conti-card">
+            <small>Conti attivi</small>
+            <strong id="contiSummaryActive">0</strong>
+          </div>
+          <div class="conti-card">
+            <small>Ultimo movimento</small>
+            <strong id="contiSummaryLast">—</strong>
           </div>
         </div>
 
-        <div class="accounts-area">
-          <div class="accounts-registry">
-            <div class="list-title">Registro conti</div>
+        <div class="accounts-shell">
+          <aside class="accounts-sidebar">
+            <div class="accounts-sidebar-head">
+              <div class="panel-title">I miei conti</div>
+              <div class="accounts-sidebar-actions">
+                <button id="editAccountBtn" class="btn-ghost small" disabled>Modifica conto</button>
+                <button id="createAccountBtn" class="btn-main small" type="button">+ Nuovo conto</button>
+              </div>
+            </div>
             <div id="accountsList" class="registry-list"></div>
-          </div>
+          </aside>
 
-          <div class="accounts-sheet">
-            <div class="list-title">Scheda conto</div>
-            <div id="accountDetailBody" class="detail-body"></div>
-          </div>
+          <section class="accounts-main">
+            <div id="accountDetailPanel" class="accounts-panel">
+              <div class="panel-title">Scheda conto</div>
+              <div id="accountDetailBody" class="detail-body"></div>
+            </div>
+
+            <div id="accountRequestPanel" class="accounts-panel hidden">
+              <div class="accounts-panel-head">
+                <div class="panel-title">Gestione conto</div>
+                <button id="closeAccountRequestBtn" class="btn-ghost small" type="button">Chiudi</button>
+              </div>
+
+              <div id="accountFormWrap" class="account-form">
+                <div class="form-title" id="accountFormTitle">Apertura nuovo conto</div>
+
+                <div class="account-steps">
+                  <div class="step active" data-step="1">1. Conto</div>
+                  <div class="step" data-step="2">2. Titolare</div>
+                  <div class="step" data-step="3">3. Conferma</div>
+                </div>
+
+                <div class="account-step active" id="accountStep1">
+                  <div class="form-grid">
+                    <div class="form-group">
+                      <label class="required">Nome conto</label>
+                      <input type="text" id="accName" placeholder="Conto Principale"/>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="required">Tipo conto</label>
+                      <select id="accType">
+                        <option value="corrente_canone">Corrente — canone fisso</option>
+                        <option value="corrente_no_canone">Corrente — senza canone</option>
+                        <option value="deposito">Conto deposito</option>
+                      </select>
+                    </div>
+
+                    <div class="form-group" id="accRateWrap" style="display:none;">
+                      <label>Tasso interesse (%)</label>
+                      <input type="number" id="accRate" value="2.5" step="0.1"/>
+                    </div>
+                  </div>
+
+                  <div class="form-actions">
+                    <button id="accNext1" class="btn-main">Avanti</button>
+                    <button id="cancelAccountBtn" class="btn-ghost">Annulla</button>
+                  </div>
+                </div>
+
+                <div class="account-step" id="accountStep2">
+                  <div class="form-grid">
+                    <div class="form-group">
+                      <label class="required">Intestatario (Nome)</label>
+                      <input type="text" id="holderName1" placeholder="Mario"/>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="required">Intestatario (Cognome)</label>
+                      <input type="text" id="holderLast1" placeholder="Rossi"/>
+                    </div>
+
+                    <div class="form-group with-status">
+                      <label>Codice Fiscale</label>
+                      <input type="text" id="holderCf1" placeholder="RSSMRA80A01H501Z"/>
+                      <span id="holderCf1Status" class="field-status neutral">—</span>
+                    </div>
+                  </div>
+
+                  <div class="form-actions">
+                    <button id="accBack2" class="btn-ghost">Indietro</button>
+                    <button id="accNext2" class="btn-main">Avanti</button>
+                  </div>
+                </div>
+
+                <div class="account-step" id="accountStep3">
+                  <div class="verify-card" id="accountVerifyCard">
+                    <div class="verify-live" id="accountVerifyLive">
+                      <span class="verify-spinner" aria-hidden="true"></span>
+                      <span class="verify-text" id="accountVerifyText">Verifica in corso...</span>
+                      <span class="verify-badge" id="accountVerifyBadge">Operazione completata</span>
+                    </div>
+                    <div class="verify-row"><span>Nome conto</span><strong id="accReviewName">—</strong></div>
+                    <div class="verify-row"><span>Tipo conto</span><strong id="accReviewType">—</strong></div>
+                    <div class="verify-row"><span>Titolare</span><strong id="accReviewHolder">—</strong></div>
+                    <div class="verify-row"><span>Codice fiscale</span><strong id="accReviewCf">—</strong></div>
+                  </div>
+
+                  <div class="account-confirm-note" id="accountConfirmNote" data-state="ready">Controlla i dati e conferma l'operazione.</div>
+
+                  <div class="form-actions">
+                    <button id="accBack3" class="btn-ghost">Indietro</button>
+                    <button id="saveAccountBtn" class="btn-main">Crea conto</button>
+                  </div>
+                </div>
+
+                <div class="required-note">* Campo obbligatorio</div>
+              </div>
+            </div>
+          </section>
         </div>
 
-        <div id="accountFormWrap" class="account-form hidden">
-          <div class="form-title" id="accountFormTitle">Apertura nuovo conto</div>
-          <div class="form-grid">
-            <div class="form-group">
-              <label>Nome conto</label>
-              <input type="text" id="accName" placeholder="Conto Principale"/>
-            </div>
-
-            <div class="form-group">
-              <label>Tipo conto</label>
-              <select id="accType">
-                <option value="corrente_canone">Corrente — canone fisso</option>
-                <option value="corrente_no_canone">Corrente — senza canone</option>
-                <option value="deposito">Conto deposito</option>
-              </select>
-            </div>
-
-            <div class="form-group" id="accRateWrap" style="display:none;">
-              <label>Tasso interesse (%)</label>
-              <input type="number" id="accRate" value="2.5" step="0.1"/>
-            </div>
-
-            <div class="form-group">
-              <label>Intestatario (Nome)</label>
-              <input type="text" id="holderName1" placeholder="Mario"/>
-            </div>
-
-            <div class="form-group">
-              <label>Intestatario (Cognome)</label>
-              <input type="text" id="holderLast1" placeholder="Rossi"/>
-            </div>
-
-            <div class="form-group">
-              <label>Codice Fiscale</label>
-              <input type="text" id="holderCf1" placeholder="RSSMRA80A01H501Z"/>
-            </div>
-
-            <div class="form-group">
-              <label>Cointestatario 2 (Nome)</label>
-              <input type="text" id="holderName2" placeholder="(opzionale)"/>
-            </div>
-
-            <div class="form-group">
-              <label>Cointestatario 2 (Cognome)</label>
-              <input type="text" id="holderLast2" placeholder="(opzionale)"/>
-            </div>
-
-            <div class="form-group">
-              <label>Cointestatario 3 (Nome)</label>
-              <input type="text" id="holderName3" placeholder="(opzionale)"/>
-            </div>
-
-            <div class="form-group">
-              <label>Cointestatario 3 (Cognome)</label>
-              <input type="text" id="holderLast3" placeholder="(opzionale)"/>
-            </div>
-          </div>
-
-          <div class="form-actions">
-            <button id="saveAccountBtn" class="btn-main">Crea conto</button>
-            <button id="cancelAccountBtn" class="btn-ghost">Annulla</button>
-          </div>
-        </div>
       </section>
 
       <!-- CARTE -->
@@ -262,130 +384,125 @@
             <p class="sub">Gestione professionale delle tue carte e richieste.</p>
           </div>
           <div class="cards-badges">
-            <span id="planBadge" class="badge secure">BASIC</span>
             <span id="cardStatusBadge" class="badge live">Attiva</span>
           </div>
         </div>
 
-        <div class="cards-layout">
-          <!-- LE MIE CARTE -->
-          <section class="cards-panel">
-            <div class="panel-title">Le mie carte</div>
-
+        <div class="cards-shell">
+          <aside class="cards-sidebar">
+            <div class="cards-sidebar-head">
+              <div class="panel-title">Le mie carte</div>
+              <button id="openCardRequestBtn" class="btn-main small" type="button">+ Richiedi nuova carta</button>
+            </div>
             <div id="cardsList" class="cards-list"></div>
+          </aside>
 
-            <div id="cardDetail" class="card-detail">
-              <div class="card-stage">
-                <div class="card-3d" id="card3d">
-                  <div class="card-face card-front" id="cardFront">
-                    <div class="card-brand">
-                      <!-- (2) Brand premium -->
-                      <span class="brand brand-premium">AFTBank</span>
-                    </div>
+          <section class="cards-main">
+            <div id="cardDetailPanel" class="cards-panel">
+              <div class="panel-title">Carta selezionata</div>
 
-                    <div class="card-chip"></div>
-
-                    <div class="card-number">
-                      <!-- (2) PAN completo con occhio toggle -->
-                      <span id="cardNumber">5342 1984 7741 4821</span>
-                      <button class="tiny-eye" id="toggleCardNumber" type="button" title="Nascondi/Mostra numero"></button>
-                    </div>
-
-                    <div class="card-row">
-                      <div class="card-holder">
-                        <small>Nome</small>
-                        <span id="cardHolder">MARIO ROSSI</span>
+              <div id="cardDetail" class="card-detail">
+                <div class="card-stage">
+                  <div class="card-3d" id="card3d">
+                    <div class="card-face card-front" id="cardFront">
+                      <div class="card-brand">
+                        <span class="brand brand-premium">AFTBank</span>
                       </div>
-                      <div class="card-exp">
-                        <small>Scadenza</small>
-                        <span id="cardExpiry">09/29</span>
-                        <!-- (3) Occhio scadenza -->
-                        <button class="tiny-eye" id="toggleExpiry" type="button" title="Nascondi/Mostra scadenza"></button>
+                      <div class="card-chip"></div>
+
+                      <div class="card-number">
+                        <span id="cardNumber">5342 1984 7741 4821</span>
                       </div>
+
+                      <div class="card-row">
+                        <div class="card-holder">
+                          <small>Nome</small>
+                          <span id="cardHolder">MARIO ROSSI</span>
+                        </div>
+                        <div class="card-exp">
+                          <small>Scadenza</small>
+                          <span id="cardExpiry">09/29</span>
+                          <button class="tiny-eye" id="toggleExpiry" type="button" title="Nascondi/Mostra scadenza"></button>
+                        </div>
+                      </div>
+
+                      <div class="card-logo">
+                        <img src="mastercard.png" alt="Mastercard" class="mc-logo" />
+                      </div>
+
+                      <div class="card-reflection"></div>
                     </div>
 
-                    <div class="card-logo">
-                      <img src="mastercard.png" alt="Mastercard" class="mc-logo" />
+                    <div class="card-face card-back">
+                      <div class="magnetic"></div>
+                      <div class="sign">
+                        <span>Firma autorizzata</span>
+                        <div class="cvc-box">
+                          <span id="cardCVC">493</span>
+                        </div>
+                      </div>
+                      <div class="anti">Anti‑Screenshot Attivo</div>
                     </div>
-
-                    <div class="card-reflection"></div>
                   </div>
 
-                  <div class="card-face card-back">
-                    <div class="magnetic"></div>
-                    <div class="sign">
-                      <!-- (4) Testo in italiano, CVC sempre visibile (no toggle separato sul retro) -->
-                      <span>Firma autorizzata</span>
-                      <div class="cvc-box">
-                        <span id="cardCVC">493</span>
-                      </div>
-                    </div>
-                    <div class="anti">Anti‑Screenshot Attivo</div>
+                  <div class="card-actions">
+                    <button id="flipCardBtn" class="btn-ghost" type="button">Mostra retro</button>
+                    <div class="countdown" id="cvcCountdown">—</div>
                   </div>
                 </div>
 
-                <div class="card-actions">
-                  <button id="flipCardBtn" class="btn-ghost" type="button">Mostra retro</button>
-                  <!-- (countdown) mostra — invece di 00 -->
-                  <div class="countdown" id="cvcCountdown">—</div>
+                <div class="card-controls">
+                  <div class="control">
+                    <span>Freeze</span>
+                    <button id="freezeBtn" class="toggle-pill"><span></span></button>
+                  </div>
+                  <div class="control">
+                    <span>Stato carta</span>
+                    <span id="cardStateText" class="badge">Attiva</span>
+                  </div>
+                  <div class="control">
+                    <span>Limite giornaliero</span>
+                    <strong id="limitDay">€ 0</strong>
+                  </div>
+                  <div class="control">
+                    <span>Limite online</span>
+                    <strong id="limitOnline">€ 0</strong>
+                  </div>
+                  <div class="control">
+                    <span>Contactless</span>
+                    <span id="contactlessBadge" class="badge live">Attivo</span>
+                  </div>
+                  <div class="control">
+                    <span>Sicurezza online</span>
+                    <span id="secureOnlineBadge" class="badge live">Attiva</span>
+                  </div>
+                  <div class="control">
+                    <span>Virtual card collegata</span>
+                    <span id="virtualLinked" class="badge">Attiva</span>
+                  </div>
+                  <div class="control">
+                    <span>Blocco carta</span>
+                    <button id="blockBtn" class="btn-ghost danger">Blocca</button>
+                  </div>
+                  <div class="control">
+                    <span>Sostituzione</span>
+                    <button id="replaceBtn" class="btn-ghost small">Richiedi nuova</button>
+                  </div>
                 </div>
               </div>
 
-              <div class="card-controls">
-                <div class="control">
-                  <span>Freeze</span>
-                  <button id="freezeBtn" class="toggle-pill"><span></span></button>
-                </div>
-                <div class="control">
-                  <span>Stato carta</span>
-                  <span id="cardStateText" class="badge">Attiva</span>
-                </div>
-                <div class="control">
-                  <span>Limite giornaliero</span>
-                  <strong id="limitDay">€ 0</strong>
-                </div>
-                <div class="control">
-                  <span>Limite online</span>
-                  <strong id="limitOnline">€ 0</strong>
-                </div>
-                <div class="control">
-                  <span>Contactless</span>
-                  <span id="contactlessBadge" class="badge live">Attivo</span>
-                </div>
-                <div class="control">
-                  <span>Sicurezza online</span>
-                  <span id="secureOnlineBadge" class="badge live">Attiva</span>
-                </div>
-                <div class="control">
-                  <span>Virtual card collegata</span>
-                  <span id="virtualLinked" class="badge">Attiva</span>
-                </div>
-                <div class="control">
-                  <span>Blocco carta</span>
-                  <button id="blockBtn" class="btn-ghost danger">Blocca</button>
-                </div>
-                <div class="control">
-                  <span>Sostituzione</span>
-                  <button id="replaceBtn" class="btn-ghost small">Richiedi nuova</button>
-                </div>
+              <div class="skeleton-area" id="cardsSkeleton">
+                <div class="skeleton title"></div>
+                <div class="skeleton line"></div>
+                <div class="skeleton line"></div>
               </div>
             </div>
 
-            <div class="skeleton-area" id="cardsSkeleton">
-              <div class="skeleton title"></div>
-              <div class="skeleton line"></div>
-              <div class="skeleton line"></div>
-            </div>
-          </section>
-
-          <!-- RICHIEDI NUOVA CARTA — (6) Accordion -->
-          <section class="cards-panel">
-            <button id="requestAccordionBtn" class="accordion-bar" type="button" aria-expanded="false">
-              <span>Richiedi nuova carta</span>
-              <span id="accordionChevron" class="chevron"></span>
-            </button>
-
-            <div id="requestPanel" class="request-panel is-collapsed" aria-hidden="true">
+            <div id="cardRequestPanel" class="cards-panel hidden">
+              <div class="cards-panel-head">
+                <div class="panel-title">Richiesta nuova carta</div>
+                <button id="closeCardRequestBtn" class="btn-ghost small" type="button">Chiudi</button>
+              </div>
 
               <div class="request-steps">
                 <div class="step active" data-step="1">1. Piano</div>
@@ -393,12 +510,11 @@
                 <div class="step" data-step="3">3. Verifica</div>
               </div>
 
-              <!-- STEP 1 -->
               <div class="request-step active" id="requestStep1">
+                <p class="request-hint">Seleziona il piano piu adatto e continua.</p>
                 <div class="plans request">
                   <div class="plan-card plan-basic" data-plan="BASIC">
                     <div class="plan-title">BASIC</div>
-                    <div class="plan-price">Gratis</div>
                     <ul>
                       <li>Virtual card inclusa</li>
                       <li>Pagamenti online</li>
@@ -410,7 +526,6 @@
 
                   <div class="plan-card plan-silver" data-plan="SILVER">
                     <div class="plan-title">SILVER</div>
-                    <div class="plan-price">€4.99/mese</div>
                     <ul>
                       <li>Carta fisica + virtuale</li>
                       <li>Pagamenti contactless</li>
@@ -422,7 +537,6 @@
 
                   <div class="plan-card plan-gold" data-plan="GOLD">
                     <div class="plan-title">GOLD</div>
-                    <div class="plan-price">€14.99/mese</div>
                     <ul>
                       <li>Cashback premium</li>
                       <li>Assicurazione viaggi</li>
@@ -438,17 +552,16 @@
                 </div>
               </div>
 
-              <!-- STEP 2 -->
               <div class="request-step" id="requestStep2">
                 <form id="cardRequestFormStep2" class="request-form">
                   <div class="form-grid">
                     <div class="form-group">
-                      <label>Nome e cognome titolare</label>
+                      <label class="required">Nome e cognome titolare</label>
                       <input type="text" id="reqFullName" placeholder="Mario Rossi"/>
                     </div>
 
                     <div class="form-group">
-                      <label>Tipo carta</label>
+                      <label class="required">Tipo carta</label>
                       <select id="reqCardType">
                         <option value="">Seleziona</option>
                         <option value="virtuale">Virtuale</option>
@@ -456,8 +569,16 @@
                       </select>
                     </div>
 
+                    <div class="form-group">
+                      <label class="required">Conto collegato</label>
+                      <select id="reqAccount">
+                        <option value="">Seleziona conto</option>
+                      </select>
+                      <small class="muted">Il conto selezionato sarà collegato alla carta.</small>
+                    </div>
+
                     <div class="form-group" id="reqShipWrap" style="display:none;">
-                      <label>Indirizzo spedizione</label>
+                      <label class="required">Indirizzo spedizione</label>
                       <input type="text" id="reqShipAddress" placeholder="Via Roma 10, 00100 Roma (RM)"/>
                     </div>
                   </div>
@@ -466,16 +587,20 @@
                     <button id="reqBack2" class="btn-ghost" type="button">Indietro</button>
                     <button id="reqNext2" class="btn-main" type="submit">Avanti</button>
                   </div>
+                  <div class="required-note">* Campo obbligatorio</div>
                 </form>
               </div>
 
-              <!-- STEP 3 -->
               <div class="request-step" id="requestStep3">
-                <div class="verify-card">
+                <div class="verify-card" id="verifyCard">
+                  <div class="verify-live" id="verifyLive">
+                    <span class="verify-spinner" aria-hidden="true"></span>
+                    <span class="verify-text" id="verifyText">Verifica in corso...</span>
+                  </div>
                   <div class="verify-row"><span>Piano</span><strong id="verifyPlan">—</strong></div>
                   <div class="verify-row"><span>Titolare</span><strong id="verifyName">—</strong></div>
                   <div class="verify-row"><span>Tipo</span><strong id="verifyType">—</strong></div>
-                  <div class="verify-row"><span>Costo mensile</span><strong id="verifyPrice">—</strong></div>
+                  <div class="verify-row"><span>Conto</span><strong id="verifyAccount">—</strong></div>
                 </div>
 
                 <div class="form-actions">
@@ -483,35 +608,172 @@
                   <button id="reqConfirm" class="btn-main" type="button">Conferma Richiesta</button>
                 </div>
 
-                <div id="verifyDoneMsg" class="verify-done hidden">
-                  ✅ Verifica completata! La tua nuova carta è in arrivo.
-                </div>
               </div>
-
-              <div id="requestStatus" class="request-status hidden">
-                <div class="status-card">
-                  <div class="status-title">Stato richiesta</div>
-                  <div id="requestState">In verifica</div>
-                  <div class="status-bar">
-                    <span class="dot active"></span>
-                    <span class="dot"></span>
-                    <span class="dot"></span>
-                  </div>
-                  <div class="status-note" id="requestNote">Verifica dati in corso…</div>
-                </div>
-              </div>
-
             </div>
           </section>
         </div>
       </section>
 
+      <!-- OPERAZIONI -->
       <section id="page-operazioni" class="page">
-        <h2>Operazioni</h2>
+        <div class="ops-header">
+          <h2>Operazioni</h2>
+          <p class="sub">Operazioni rapide e sicure sui tuoi conti.</p>
+        </div>
+
+        <div class="ops-grid">
+          <button class="op-card op-in" data-op="Versamento">
+            <div class="op-icon">↑</div>
+            <div class="op-title">Versamento</div>
+          </button>
+          <button class="op-card op-out" data-op="Prelevamento">
+            <div class="op-icon">↓</div>
+            <div class="op-title">Prelievo</div>
+          </button>
+          <button class="op-card op-transfer" data-op="Bonifico">
+            <div class="op-icon">⇄</div>
+            <div class="op-title">Bonifico</div>
+          </button>
+          <button class="op-card op-internal" data-op="Giroconto">
+            <div class="op-icon">↻</div>
+            <div class="op-title">Giroconto</div>
+          </button>
+        </div>
+
+        <div class="op-form-panel" id="opFormPanel" data-step="1">
+          <div class="op-form-title" id="opFormTitle">Seleziona un’operazione</div>
+          <div class="op-steps">
+            <div class="step active" data-step="1">1. Tipo</div>
+            <div class="step" data-step="2">2. Dati</div>
+            <div class="step" data-step="3">3. Conferma</div>
+          </div>
+          <div class="op-status" id="opStatus" style="display:none;"></div>
+
+          <div class="op-step op-step-data">
+            <div class="op-form-grid">
+              <div class="form-group">
+                <label class="required">Conto</label>
+                <select id="opAccount"></select>
+              </div>
+              <div class="form-group" id="opTargetWrap" style="display:none;">
+                <label>Conto destinazione</label>
+                <select id="opTargetAccount"></select>
+              </div>
+              <div class="form-group">
+                <label class="required">Data contabile</label>
+                <input type="date" id="opDateAcc"/>
+              </div>
+              <div class="form-group">
+                <label class="required">Data valuta</label>
+                <input type="date" id="opDateVal"/>
+              </div>
+              <div class="form-group">
+                <label class="required">Importo (€)</label>
+                <input type="number" id="opAmount" placeholder="0,00"/>
+              </div>
+              <div class="form-group">
+                <label>Descrizione</label>
+                <input type="text" id="opDesc" placeholder="Causale operazione"/>
+              </div>
+            </div>
+
+            <button id="opConfirmBtn" class="btn-main op-confirm">Conferma operazione</button>
+            <div class="required-note">* Campo obbligatorio</div>
+          </div>
+
+          <div class="op-step op-step-confirm">
+            <div class="verify-card" id="opVerifyCard">
+              <div class="verify-live" id="opVerifyLive">
+                <span class="verify-spinner" aria-hidden="true"></span>
+                <span class="verify-text" id="opVerifyText">Verifica in corso...</span>
+                <span class="verify-badge">Completata</span>
+              </div>
+              <div class="verify-row"><span>Tipo operazione</span><strong id="opReviewType">—</strong></div>
+              <div class="verify-row"><span>Conto</span><strong id="opReviewAccount">—</strong></div>
+              <div class="verify-row" id="opReviewTargetRow" style="display:none;"><span>Destinazione</span><strong id="opReviewTarget">—</strong></div>
+              <div class="verify-row"><span>Importo</span><strong id="opReviewAmount">—</strong></div>
+              <div class="verify-row"><span>Descrizione</span><strong id="opReviewDesc">—</strong></div>
+            </div>
+          </div>
+        </div>
       </section>
 
+      <!-- MOVIMENTI -->
       <section id="page-movimenti" class="page">
-        <h2>Movimenti</h2>
+        <div class="mov-header">
+          <h2>Movimenti</h2>
+          <p class="sub">Ricerca e consultazione movimenti contabili.</p>
+        </div>
+
+        <div class="mov-tools">
+          <div class="mov-title">Filtra e ordina</div>
+          <div class="mov-actions">
+            <input type="text" id="movSearch" placeholder="Cerca per descrizione o tipo..." aria-label="Cerca movimenti" />
+            <button id="movToggleFiltersBtn" class="btn-ghost small" type="button">Filtra</button>
+            <button id="movToggleSortBtn" class="btn-ghost small" type="button">Ordina per</button>
+            <button id="movExportBtn" class="btn-main small" type="button">Esporta</button>
+          </div>
+        </div>
+
+        <!-- Pannello Filtri (nascosto) -->
+        <div id="movFiltersPanel" class="mov-controls" style="display:none; margin-top:0.6rem;">
+          <select id="movTypeFilter" aria-label="Filtro tipo">
+            <option value="">Tutti i tipi</option>
+            <option value="Versamento">Versamento</option>
+            <option value="Prelevamento">Prelievo</option>
+            <option value="Bonifico">Bonifico</option>
+            <option value="Giroconto">Giroconto</option>
+            <option value="Pagamento">Pagamento</option>
+            <option value="Addebito">Addebito</option>
+            <option value="Accredito">Accredito</option>
+          </select>
+
+          <label class="sr-only">Da</label>
+          <input type="date" id="movDateFrom" aria-label="Data da" />
+          <label class="sr-only">A</label>
+          <input type="date" id="movDateTo" aria-label="Data a" />
+
+          <input type="number" id="movAmountMin" placeholder="Importo min" aria-label="Importo minimo" />
+          <input type="number" id="movAmountMax" placeholder="Importo max" aria-label="Importo massimo" />
+          <button id="movClearFilters" class="btn-ghost small">Reset</button>
+        </div>
+
+        <!-- Pannello Ordina (nascosto) -->
+        <div id="movSortPanel" class="mov-controls" style="display:none; margin-top:0.6rem;">
+          <label class="sr-only">Ordina per</label>
+          <select id="movSortBy" aria-label="Ordina per">
+            <option value="dateAcc">Data contabile</option>
+            <option value="dateVal">Data valuta</option>
+            <option value="type">Tipo operazione</option>
+            <option value="amount">Importo</option>
+          </select>
+          <select id="movSortDir" aria-label="Direzione ordine">
+            <option value="desc">Decrescente</option>
+            <option value="asc">Crescente</option>
+          </select>
+        </div>
+
+        <div class="mov-table-wrap">
+          <table class="mov-table">
+            <thead>
+              <tr>
+                <th data-sort="dateAcc">Data contabile</th>
+                <th data-sort="dateVal">Data valuta</th>
+                <th data-sort="type">Tipo operazione</th>
+                <th data-sort="desc">Descrizione</th>
+                <th data-sort="amount">Importo</th>
+                <th data-sort="balance">Saldo aggiornato</th>
+              </tr>
+            </thead>
+            <tbody id="movTableBody"></tbody>
+          </table>
+        </div>
+
+        <div class="mov-pagination">
+          <button id="movPrev" class="btn-ghost small">◀</button>
+          <span id="movPageInfo">Pagina 1 di 1</span>
+          <button id="movNext" class="btn-ghost small">▶</button>
+        </div>
       </section>
     </main>
 
@@ -527,35 +789,15 @@
     </footer>
   </div>
 
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
   <div id="cookieBanner" class="cookie-banner">
     <div>
-      Questo sito utilizza cookie tecnici per il funzionamento. Proseguendo accetti l'uso dei cookie.
+      Questo sito utilizza cookie tecnici per il funzionamento. Proseguendo accetti l’uso dei cookie.
     </div>
-    <button id="acceptCookiesBtn" class="btn-main small">Chiudi</button>
+    <button id="acceptCookiesBtn" class="btn-main small" type="button">Chiudi</button>
   </div>
 
-  <!-- MODAL AUTH CVC -->
-  <div id="authModal" class="modal" style="display:none;">
-    <div class="modal-box wide">
-      <h3>Conferma identità</h3>
-      <p class="muted">Per mostrare il CVC conferma l'identità.</p>
-
-      <div class="form-grid">
-        <div class="form-group">
-          <label>Password</label>
-          <input type="password" id="authConfirmPass" placeholder="Inserisci password"/>
-        </div>
-      </div>
-
-      <div class="modal-actions">
-        <button id="confirmAuth">Conferma</button>
-        <button id="closeAuth">Annulla</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- TOAST -->
-  <div id="toast" class="toast">Salvato</div>
 
   <div id="profileModal" class="modal" style="display:none;">
     <div class="modal-box wide">
@@ -566,21 +808,24 @@
           <label>Nome completo</label>
           <input type="text" id="profileName"/>
         </div>
-        <div class="form-group">
+        <div class="form-group with-status">
           <label>Email</label>
           <input type="email" id="profileEmail"/>
+          <span id="profileEmailStatus" class="field-status neutral">—</span>
         </div>
         <div class="form-group">
           <label>Via</label>
           <input type="text" id="profileVia"/>
         </div>
-        <div class="form-group">
+        <div class="form-group with-status">
           <label>Telefono</label>
           <input type="text" id="profilePhone"/>
+          <span id="profilePhoneStatus" class="field-status neutral">—</span>
         </div>
-        <div class="form-group">
+        <div class="form-group with-status">
           <label>Codice fiscale</label>
           <input type="text" id="profileCF" maxlength="16"/>
+          <span id="profileCFStatus" class="field-status neutral">—</span>
         </div>
         <div class="form-group">
           <label>Username</label>
@@ -598,6 +843,85 @@
     </div>
   </div>
 
+  <div id="editCardModal" class="modal" style="display:none;">
+    <div class="modal-box">
+      <h3>Modifica carta</h3>
+
+      <div class="form-group">
+        <label>Nome/etichetta</label>
+        <input type="text" id="editCardLabel" placeholder="Nome carta"/>
+      </div>
+
+      <div class="form-group">
+        <label>Tipo carta</label>
+        <select id="editCardType">
+          <option value="virtuale">Virtuale</option>
+          <option value="fisica">Fisica</option>
+        </select>
+      </div>
+
+      <div class="modal-actions">
+        <button id="cancelEditCard" type="button">Annulla</button>
+        <button id="saveEditCard" class="btn-main small" type="button">Salva</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="exportModal" class="modal" style="display:none;">
+    <div class="modal-box">
+      <h3>Esporta movimenti</h3>
+
+      <div class="form-group">
+        <label>Formato</label>
+        <select id="movExportFormat">
+          <option value="pdf">PDF</option>
+          <option value="docx">DOCX</option>
+          <option value="txt">TXT</option>
+          <option value="xlsx">XLSX</option>
+        </select>
+      </div>
+
+      <div class="modal-actions">
+        <button id="cancelExport" type="button">Annulla</button>
+        <button id="confirmExport" class="btn-main small" type="button">Esporta</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="cvcAuthModal" class="modal" style="display:none;">
+    <div class="modal-box">
+      <h3>Conferma password</h3>
+
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="cvcAuthPass" placeholder="Inserisci la password"/>
+      </div>
+
+      <div id="cvcAuthError" class="modal-error"></div>
+
+      <div class="modal-actions">
+        <button id="cancelCvcAuth" type="button">Annulla</button>
+        <button id="confirmCvcAuth" class="btn-main small" type="button">Conferma</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="blockCardModal" class="modal" style="display:none;">
+    <div class="modal-box">
+      <h3>Blocca carta</h3>
+      <p class="muted">Vuoi bloccare la carta selezionata?</p>
+
+      <div class="modal-actions">
+        <button id="cancelBlockCard" type="button">Annulla</button>
+        <button id="confirmBlockCard" class="btn-main small" type="button">Blocca</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.3/dist/xlsx.full.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
