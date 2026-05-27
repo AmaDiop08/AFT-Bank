@@ -1517,12 +1517,16 @@ function updateCardUI(card){
 
   setCardCvc(card, cvcVisible);
 
-  document.getElementById('cardStatusBadge').textContent = statusLabel(card.status);
+  // Non mostriamo più la stringa di stato nella testata delle carte
+  // per evitare il testo fisso "Attiva" opposto al titolo "Carte".
+  // Lo stato rimane visibile nella scheda dettaglio (`cardStateText`).
+  const cardStatusBadgeEl = document.getElementById('cardStatusBadge');
+  if(cardStatusBadgeEl) cardStatusBadgeEl.textContent = '';
   document.getElementById('cardStateText').textContent = statusLabel(card.status);
 
   document.getElementById('freezeBtn').classList.toggle('active', card.status==='frozen');
   document.getElementById('secureOnlineBadge').textContent = card.secureOnline ? 'Attiva' : 'Disattiva';
-  document.getElementById('contactlessBadge').textContent = card.contactless ? 'Attivo' : 'Disattivo';
+  document.getElementById('contactlessBadge').textContent = card.contactless ? 'Attivo' : 'Disattivato';
   document.getElementById('virtualLinked').textContent = card.virtualLinked ? 'Attiva' : 'Disattiva';
 
   const rules = PLAN_RULES[card.plan] || PLAN_RULES.BASIC;
