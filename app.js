@@ -1,8 +1,23 @@
-'use strict';
+"use strict";
 
 /* =====================
-   CONFIG & STORAGE
-===================== */
+  CONFIG & STORAGE
+  ------------------
+  Qui definiamo costanti e dati di default che rappresentano la
+  configurazione dell'applicazione e lo stato persistente (localStorage).
+  - `STORAGE_KEYS`: chiavi usate su `localStorage` per separare i vari
+    insiemi di dati.
+  - `CONFIG`: parametri globali come limiti e latenze simulate.
+  - `EMAILJS_CONFIG`: configurazione per integrazione con EmailJS (usata
+    per inviare notifiche e-mail). Nel codice di demo spesso questi
+    valori sono mock o pubblici.
+*/
+/* Nota: i commenti aggiunti in questo file spiegano blocchi "non
+  ovvi" come generazione di dati mock, simulazione API, problematiche
+  dell'interazione DOM e meccanismi di debounce/timer che possono
+  confondere chi legge per la prima volta. */
+
+/* ===================== */
 const STORAGE_KEYS = {
   USERS: 'aft_users',
   ACCOUNTS: 'aft_accounts',
@@ -15,8 +30,12 @@ const STORAGE_KEYS = {
 };
 
 const CONFIG = {
+  // Numero massimo di movimenti mostrati per conto
   MAX_MOV: 10,
+  // Numero massimo di titolari permessi per un conto
   MAX_HOLDERS: 3,
+  // Latenza simulata per le chiamate API (ms): usata per rendere
+  // l'app più realistica durante le demo/testing.
   API_LATENCY: [500, 1200]
 };
 
@@ -39,6 +58,8 @@ const PLAN_RULES = {
   GOLD:  { limits: { day: 5000, online: 2500 }, privileges: ['virtual_card','online_payments','physical_card','stats','vip'], contactless: true, price: 14.99 }
 };
 
+// Dati di default (utili per demo o primo avvio). In un'app reale
+// questi non dovrebbero contenere password in chiaro.
 const defaultUsers = [
   { username:'admin', password:'admin', nomeCompleto:'Amministratore', email:'', via:'', telefono:'', cf:'', plan:'BASIC' }
 ];
@@ -56,6 +77,9 @@ const defaultRequests = [];
 /* =====================
    STATE
 ===================== */
+// Stato in memoria (caricato da localStorage all'avvio). Le funzioni
+// `load*` si occupano di leggere e fornire i default quando non esiste
+// ancora nulla nel localStorage.
 let utenti = loadUsers();
 let conti = loadAccounts();
 let carte = loadCards();
@@ -85,9 +109,12 @@ let cvcVisible = false;
 let cvcTimer = null;
 let cvcCountdownTimer = null;
 let lastCardId = null;
-let xlsxLoadPromise = null;
 let lastAccessAt = null;
 
+// Helpers numerici e formattazione:
+// - `money` corregge i problemi di floating point arrotondando a 2 decimali
+// - `fmt` restituisce una stringa formattata in euro secondo locale IT
+// - `today` restituisce la data corrente in formato ISO (YYYY-MM-DD)
 const money = n => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 const fmt = n => '€ ' + money(n).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const today = () => new Date().toISOString().split('T')[0];
@@ -98,14 +125,23 @@ const today = () => new Date().toISOString().split('T')[0];
 function loadUsers(){ const raw = localStorage.getItem(STORAGE_KEYS.USERS); return raw ? JSON.parse(raw) : defaultUsers; }
 function loadAccounts(){ const raw = localStorage.getItem(STORAGE_KEYS.ACCOUNTS); return raw ? JSON.parse(raw) : defaultAccounts; }
 function loadCards(){
+  // Carica le carte da localStorage o usa i default.
+  // Se alcuni campi sono mancanti, li popola con valori generati
+  // (numero carta, scadenza, CVC). Questo rende i dati coerenti
+  // per la UI evitando di dover gestire molte eccezioni.
   const raw = localStorage.getItem(STORAGE_KEYS.CARDS);
   const list = raw ? JSON.parse(raw) : defaultCards;
+
+  // Generatori semplici per campi mancanti (debug/demo only):
   const mkNumber = () => Array.from({length:16},()=>Math.floor(Math.random()*10)).join('').replace(/(.{4})/g,'$1 ').trim();
   const mkExpiry = () => `${String(Math.floor(Math.random()*12)+1).padStart(2,'0')}/${String(new Date().getFullYear()+3).slice(2)}`;
   const mkCvc = () => String(Math.floor(Math.random()*900)+100);
+
   list.forEach(c=>{
     if(!c.label) c.label = `${c.plan} • ${c.id}`;
     if(!c.type) c.type = 'virtuale';
+    // Se non esistono numero/scadenza/CVC vengono creati al volo.
+    // In produzione sarebbe preferibile una fonte dati più solida.
     if(!c.cardNumber) c.cardNumber = mkNumber();
     if(!c.expiry) c.expiry = mkExpiry();
     if(!c.cvc) c.cvc = mkCvc();
@@ -131,6 +167,9 @@ function saveUIPrefs(p){ localStorage.setItem(STORAGE_KEYS.UI_PREFS, JSON.string
 initMockData();
 
 function initMockData(){
+  // Inizializza i conti assicurando che campi fondamentali esistano.
+  // Se non ci sono movimenti, ne genera un set di esempio con
+  // `generateMockMovements` per popolare la UI.
   conti.forEach((c, idx)=>{
     if(!c.iban) c.iban = generateIban(c.id, idx);
     if(!c.status) c.status = 'active';
@@ -146,6 +185,12 @@ function generateIban(id, idx){
 }
 
 function generateMockMovements(account){
+  // Genera movimenti finti per popolare la UI.
+  // Nota importante: il calcolo del balance è "retrogrado" rispetto
+  // all'importo (qui si sottrae amount dal balance corrente) per
+  // avere una sequenza coerente quando si mostra l'elenco con
+  // `unshift` o simili. Non è il motivo più intuitivo — fare attenzione
+  // quando si riusa questa logica.
   const templates = [
     { type:'Versamento', desc:'Versamento contanti sportello', amount: 350 },
     { type:'Bonifico', desc:'Bonifico in uscita', amount: -220 },
@@ -160,6 +205,8 @@ function generateMockMovements(account){
   let currentBalance = account.saldo;
   for(let i=0;i<9;i++){
     const tpl = templates[i % templates.length];
+    // Calcolo della data: sottraiamo giorni per ottenere movimenti
+    // distribuiti nel passato. `i*3+1` regola la distanza tra le date.
     const date = new Date();
     date.setDate(date.getDate() - (i*3 + 1));
     const amount = tpl.amount;
@@ -170,9 +217,12 @@ function generateMockMovements(account){
       type: tpl.type,
       desc: tpl.desc,
       amount,
+      // Salvare il balance prima dell'applicazione dell'operazione
+      // aiuta a mostrare la cronologia in modo comprensibile.
       balance: currentBalance
     };
     out.push(movement);
+    // Aggiorniamo il balance per il movimento successivo.
     currentBalance = money(currentBalance - amount);
   }
   return out;
@@ -181,6 +231,17 @@ function generateMockMovements(account){
 /* =====================
    API SIMULATION
 ===================== */
+/* =====================
+   API SIMULATION
+   ------------------
+   Questo oggetto `api` simula chiamate asincrone a servizi remoti.
+   È molto utile per riprodurre latenze reali durante lo sviluppo.
+   - `delay()` restituisce un intervallo casuale calcolato da `CONFIG.API_LATENCY`.
+   - Le funzioni `updatePlan`, `getCards`, `updateCard`, `createRequest`, `updateRequest`
+     ritardano l'esecuzione con `wait` e poi operano sullo stato in memoria.
+   Attenzione: qui non c'è gestione concorrente reale; è una simulazione
+   per demo e test locali.
+*/
 const api = {
   delay(){ const [min,max]=CONFIG.API_LATENCY; return Math.floor(Math.random()*(max-min+1))+min; },
   async updatePlan(username, plan){
@@ -196,8 +257,13 @@ const api = {
   async createRequest(request){ await wait(api.delay()); richieste.push(request); saveRequests(); return request; },
   async updateRequest(id, patch){ await wait(api.delay()); const r=richieste.find(x=>x.id===id); Object.assign(r, patch); saveRequests(); return r; }
 };
+
+// Piccolo helper per introdurre delay in Promise-based code
 const wait = ms => new Promise(r=>setTimeout(r, ms));
 
+// Inizializzazione di EmailJS: la libreria espone `window.emailjs` e deve
+// essere inizializzata solo una volta per chiave pubblica. La proprietà
+// `_doneKey` viene usata per evitare reinizializzazioni inutili.
 function initEmailJs(publicKey){
   if(!window.emailjs) return;
   const key = publicKey || EMAILJS_CONFIG.publicKey;
@@ -206,6 +272,13 @@ function initEmailJs(publicKey){
   initEmailJs._doneKey = key;
 }
 
+/*
+ sendEmailJs: wrapper sicuro per l'invio di email tramite EmailJS.
+ - Verifica la presenza della libreria
+ - Verifica il template e il destinatario
+ - Usa `notify` per mostrare messaggi UX
+ - Logga payload e risposte per debugging
+*/
 function sendEmailJs(templateId, params, serviceId, publicKey){
   initEmailJs(publicKey);
   if(!window.emailjs){
@@ -216,6 +289,8 @@ function sendEmailJs(templateId, params, serviceId, publicKey){
     notify('Template email mancante');
     return Promise.resolve(false);
   }
+  // Normalizzazione del parametro del destinatario: alcuni template
+  // chiamano il campo `email_utente`, altri `to_email`.
   if(params && !params.to_email && params.email_utente){
     params.to_email = params.email_utente;
   }
@@ -245,10 +320,13 @@ function sendEmailJs(templateId, params, serviceId, publicKey){
 /* =====================
    VALIDATION HELPERS
 ===================== */
+// Funzioni di validazione snelle per CF, telefono ed email. Non sono
+// esaustive ma vanno bene per validazioni client-side veloci.
 const validateCF = cf => cf && /^[A-Z0-9]{16}$/.test(cf);
 const validatePhone = phone => /^\+?\d{8,15}$/.test(phone.replace(/\s+/g,''));
 const validateEmail = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
+// Aggiorna lo stato visuale (✓/✕/—) di un campo di validazione.
 function setFieldStatus(el, ok){
   if(!el) return;
   el.classList.remove('ok','bad','neutral');
@@ -259,6 +337,7 @@ function setFieldStatus(el, ok){
 /* =====================
    UTILS
 ===================== */
+// Generatori rapidi per numero carta, scadenza e CVC usati nelle demo
 const genCardNumber = () => Array.from({length:16},()=>Math.floor(Math.random()*10)).join('').replace(/(.{4})/g,'$1 ').trim();
 const genExpiry = () => `${String(Math.floor(Math.random()*12)+1).padStart(2,'0')}/${String(new Date().getFullYear()+3).slice(2)}`;
 const genCVC = () => String(Math.floor(Math.random()*900)+100);
@@ -340,11 +419,16 @@ function initCookieBanner(){
     return;
   }
 
+  // Pattern `dataset.bound`: permettiamo il binding degli event listener
+  // una sola volta per elemento. Questo evita duplicazioni quando
+  // le funzioni init* possono essere chiamate più volte.
   if(btn.dataset.bound === '1') return;
   btn.dataset.bound = '1';
 
   btn.addEventListener('click', ()=>{
     localStorage.setItem('cookieAccettati', 'true');
+    // Animazione di chiusura: aggiungiamo classe e rimuoviamo dopo
+    // 260ms per lasciare spazio alla transizione CSS.
     banner.classList.add('is-closing');
     setTimeout(()=>banner.remove(), 260);
   }, { once:true });
@@ -1012,32 +1096,194 @@ function buildMovementsExport(){
   return { header, lines, rows };
 }
 
-function ensureXlsx(){
-  if(window.XLSX) return Promise.resolve(true);
-  if(xlsxLoadPromise) return xlsxLoadPromise;
-  const sources = [
-    'https://cdn.jsdelivr.net/npm/xlsx@0.19.3/dist/xlsx.full.min.js',
-    'https://unpkg.com/xlsx@0.19.3/dist/xlsx.full.min.js'
+
+function buildXlsxBlob(header, rows) {
+  // XLSX è un file ZIP. Costruiamo le parti necessarie a mano.
+  const sharedStrings = [];
+  const strIndex = {};
+
+  function getStrIdx(s) {
+    const key = String(s ?? '');
+    if (strIndex[key] === undefined) {
+      strIndex[key] = sharedStrings.length;
+      sharedStrings.push(key);
+    }
+    return strIndex[key];
+  }
+
+  // Costruisce il contenuto del foglio XML
+  function buildSheetXml(header, rows) {
+    const allRows = [header, ...rows];
+    let xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`;
+    xml += `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`;
+    xml += `<sheetData>`;
+
+    allRows.forEach((row, ri) => {
+      xml += `<row r="${ri + 1}">`;
+      row.forEach((cell, ci) => {
+        const col = String.fromCharCode(65 + ci);
+        const ref = `${col}${ri + 1}`;
+        const idx = getStrIdx(cell);
+        xml += `<c r="${ref}" t="s"><v>${idx}</v></c>`;
+      });
+      xml += `</row>`;
+    });
+
+    xml += `</sheetData></worksheet>`;
+    return xml;
+  }
+
+  function buildSharedStringsXml() {
+    const count = sharedStrings.length;
+    let xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`;
+    xml += `<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="${count}" uniqueCount="${count}">`;
+    sharedStrings.forEach(s => {
+      const escaped = String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+      xml += `<si><t xml:space="preserve">${escaped}</t></si>`;
+    });
+    xml += `</sst>`;
+    return xml;
+  }
+
+  const sheetXml = buildSheetXml(header, rows); // sharedStrings si popola qui
+  const ssXml = buildSharedStringsXml();
+
+  const workbookXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+          xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets><sheet name="Movimenti" sheetId="1" r:id="rId1"/></sheets>
+</workbook>`;
+
+  const workbookRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>
+</Relationships>`;
+
+  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>
+</Types>`;
+
+  const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`;
+
+  // Assembla lo ZIP manualmente (formato ZIP minimale senza compressione)
+  function toUint8(str) {
+    const buf = new Uint8Array(str.length);
+    for (let i = 0; i < str.length; i++) buf[i] = str.charCodeAt(i) & 0xff;
+    return buf;
+  }
+
+  function crc32(buf) {
+    const table = crc32.table || (crc32.table = (() => {
+      const t = new Uint32Array(256);
+      for (let i = 0; i < 256; i++) {
+        let c = i;
+        for (let j = 0; j < 8; j++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+        t[i] = c;
+      }
+      return t;
+    })());
+    let c = 0xFFFFFFFF;
+    for (let i = 0; i < buf.length; i++) c = table[(c ^ buf[i]) & 0xff] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  function u16le(n) { return [n & 0xff, (n >> 8) & 0xff]; }
+  function u32le(n) { return [n & 0xff, (n >> 8) & 0xff, (n >> 16) & 0xff, (n >> 24) & 0xff]; }
+
+  function zipEntry(name, data) {
+    const nameBytes = toUint8(name);
+    const crc = crc32(data);
+    const local = [
+      0x50,0x4B,0x03,0x04,       // local file header signature
+      20,0,                       // version needed
+      0,0,                        // general purpose bit flag
+      0,0,                        // compression method (stored)
+      0,0,0,0,                    // last mod time/date
+      ...u32le(crc),
+      ...u32le(data.length),
+      ...u32le(data.length),
+      ...u16le(nameBytes.length),
+      0,0,                        // extra field length
+      ...nameBytes,
+      ...data
+    ];
+    const central = [
+      0x50,0x4B,0x01,0x02,
+      20,0,20,0,
+      0,0,0,0,0,0,0,0,
+      ...u32le(crc),
+      ...u32le(data.length),
+      ...u32le(data.length),
+      ...u16le(nameBytes.length),
+      0,0,0,0,0,0,
+      0,0,0,0,
+      ...u32le(0), // offset (filled later)
+      ...nameBytes
+    ];
+    return { local, central, nameBytes };
+  }
+
+  const files = [
+    { name: '[Content_Types].xml',              data: toUint8(contentTypes) },
+    { name: '_rels/.rels',                      data: toUint8(rootRels) },
+    { name: 'xl/workbook.xml',                  data: toUint8(workbookXml) },
+    { name: 'xl/_rels/workbook.xml.rels',       data: toUint8(workbookRels) },
+    { name: 'xl/worksheets/sheet1.xml',         data: toUint8(sheetXml) },
+    { name: 'xl/sharedStrings.xml',             data: toUint8(ssXml) }
   ];
-  xlsxLoadPromise = new Promise((resolve)=>{
-    const tryLoad = (index)=>{
-      if(index >= sources.length) return resolve(false);
-      const script = document.createElement('script');
-      script.src = sources[index];
-      script.async = true;
-      script.onload = () => {
-        if(window.XLSX) resolve(true);
-        else tryLoad(index + 1);
-      };
-      script.onerror = () => tryLoad(index + 1);
-      document.head.appendChild(script);
-    };
-    tryLoad(0);
+
+  const localParts = [];
+  const centralParts = [];
+  let offset = 0;
+
+  files.forEach(f => {
+    const entry = zipEntry(f.name, f.data);
+    // scrivi offset nel central directory header (byte 42-45)
+    entry.central[42] = offset & 0xff;
+    entry.central[43] = (offset >> 8) & 0xff;
+    entry.central[44] = (offset >> 16) & 0xff;
+    entry.central[45] = (offset >> 24) & 0xff;
+    localParts.push(entry.local);
+    centralParts.push(entry.central);
+    offset += entry.local.length;
   });
-  return xlsxLoadPromise;
+
+  const centralStart = offset;
+  const centralSize = centralParts.reduce((s, c) => s + c.length, 0);
+  const eocd = [
+    0x50,0x4B,0x05,0x06,
+    0,0,0,0,
+    ...u16le(files.length),
+    ...u16le(files.length),
+    ...u32le(centralSize),
+    ...u32le(centralStart),
+    0,0
+  ];
+
+  const all = [...localParts.flat(), ...centralParts.flat(), ...eocd];
+  return new Blob([new Uint8Array(all)], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  });
 }
 
 async function saveExportFile(blob, format){
+  // Salva un Blob sul filesystem: preferiamo l'API moderna
+  // `showSaveFilePicker` se disponibile (migliore esperienza), altrimenti
+  // usiamo il fallback con `URL.createObjectURL` e click su <a>.
+  // `format` viene usato per suggerire estensione e mime type.
   const extensions = { pdf: '.pdf', docx: '.docx', txt: '.txt', xlsx: '.xlsx' };
   const mimes = {
     pdf: 'application/pdf',
@@ -1069,6 +1315,14 @@ async function saveExportFile(blob, format){
 }
 
 async function exportMovements(format){
+  // Funzione centralizzata per esportare i movimenti in vari formati.
+  // Il flusso generale:
+  // 1) costruisce i dati con `buildMovementsExport`
+  // 2) seleziona il formato (txt, pdf, docx, xlsx)
+  // 3) usa librerie presenti su window (jsPDF, docx, XLSX) se disponibili
+  // 4) chiama `saveExportFile` per fornire il file all'utente
+  // Nota: il codice gestisce molte dipendenze opzionali e mostra
+  // notifiche quando un exporter non è disponibile.
   const selectedFormat = format || document.getElementById('movExportFormat')?.value || 'pdf';
   const { header, lines, rows } = buildMovementsExport();
   if(!rows.length) return notify('Nessun movimento da esportare');
@@ -1082,6 +1336,8 @@ async function exportMovements(format){
     }
 
     if(selectedFormat === 'pdf'){
+      // jsPDF è richiesto per generare PDF client-side. Se non è
+      // caricato mostriamo un messaggio all'utente.
       if(!window.jspdf?.jsPDF){
         notify('Export PDF non disponibile');
         return;
@@ -1113,6 +1369,7 @@ async function exportMovements(format){
     }
 
     if(selectedFormat === 'docx'){
+      // Docx richiede la libreria `docx`. Anche qui è opzionale.
       if(!window.docx){
         notify('Export DOCX non disponibile');
         return;
@@ -1136,19 +1393,16 @@ async function exportMovements(format){
     }
 
     if(selectedFormat === 'xlsx'){
-      const ok = await ensureXlsx();
-      if(!ok || !window.XLSX){
-        notify('Export XLSX non disponibile');
-        return;
-      }
-      const wb = window.XLSX.utils.book_new();
-      const ws = window.XLSX.utils.aoa_to_sheet([header, ...lines]);
-      window.XLSX.utils.book_append_sheet(wb, ws, 'Movimenti');
-      const out = window.XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-      await saveExportFile(new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), 'xlsx');
-      notify('Export XLSX completato');
-      return;
-    }
+  try {
+    const blob = buildXlsxBlob(header, lines);
+    await saveExportFile(blob, 'xlsx');
+    notify('Export XLSX completato');
+  } catch(err) {
+    console.error('XLSX build error:', err);
+    notify('Export XLSX non riuscito');
+  }
+  return;
+}
   } catch (err) {
     console.error('Export error:', err);
     notify('Export annullato o non riuscito');
@@ -1170,10 +1424,14 @@ function confirmExportModal(){
   closeExportModal();
 }
 
+// Mappa internamente alcuni nomi tecnici a etichette più leggibili
+// per l'utente. Si può estendere per localizzazione o sinonimi.
 function displayMovementType(type){
   return type === 'Prelevamento' ? 'Prelievo' : type;
 }
 
+// Restituisce un'icona testuale per il tipo di movimento. Usata nella
+// lista movimenti per dare un'indicazione visiva veloce.
 function movementIcon(type){
   switch(type){
     case 'Versamento': return '↑';
@@ -1278,7 +1536,10 @@ function setCardCvc(card, visible){
   cvcVisible = visible;
   const el = document.getElementById('cardCVC');
   if(!el) return;
-  el.textContent = visible && card ? (card.cvc || '—') : '•••';
+  // Il retro della carta deve mostrare il numero CVC reale, non un segnaposto.
+  // Manteniamo comunque il flag `visible` per la logica di flip/timeout,
+  // ma il testo rimane sempre il valore effettivo della carta.
+  el.textContent = card ? (card.cvc || '—') : '—';
 }
 
 function resetCvcState(){
@@ -1304,6 +1565,15 @@ function resetCvcState(){
   if(card) setCardCvc(card, false);
 }
 
+// Mostra temporaneamente il CVC sul retro della carta.
+// Meccanismo:
+// - abilita la visualizzazione del CVC (`setCardCvc`)
+// - aggiunge la classe `flipped` per mostrare il retro 3D
+// - avvia un countdown visivo di 4 secondi
+// - disabilita il pulsante di flip per evitare duplicazioni
+// - alla scadenza ripristina lo stato cancellando i timer
+// Nota: cancelliamo eventuali timer precedenti per evitare race
+// condition tra più click rapidi.
 function startCvcReveal(){
   const card = carte.find(c=>c.id===selectedCardId);
   const card3d = document.getElementById('card3d');
@@ -1368,20 +1638,9 @@ function initCvcAuthModal(){
   const cancel = document.getElementById('cancelCvcAuth');
   const confirm = document.getElementById('confirmCvcAuth');
 
-  if(cancel && cancel.dataset.bound !== '1'){
-    cancel.dataset.bound = '1';
-    cancel.addEventListener('click', closeCvcAuthModal);
-  }
-  if(confirm && confirm.dataset.bound !== '1'){
-    confirm.dataset.bound = '1';
-    confirm.addEventListener('click', confirmCvcAuth);
-  }
-  if(modal && modal.dataset.bound !== '1'){
-    modal.dataset.bound = '1';
-    modal.addEventListener('click', (e)=>{
-      if(e.target === modal) closeCvcAuthModal();
-    });
-  }
+  if(cancel) cancel.onclick = closeCvcAuthModal;
+  if(confirm) confirm.onclick = confirmCvcAuth;
+  if(modal) modal.onclick = (e)=>{ if(e.target === modal) closeCvcAuthModal(); };
 }
 
 function openBlockCardModal(){
@@ -1407,20 +1666,9 @@ function initBlockCardModal(){
   const cancel = document.getElementById('cancelBlockCard');
   const confirm = document.getElementById('confirmBlockCard');
 
-  if(cancel && cancel.dataset.bound !== '1'){
-    cancel.dataset.bound = '1';
-    cancel.addEventListener('click', closeBlockCardModal);
-  }
-  if(confirm && confirm.dataset.bound !== '1'){
-    confirm.dataset.bound = '1';
-    confirm.addEventListener('click', confirmBlockCard);
-  }
-  if(modal && modal.dataset.bound !== '1'){
-    modal.dataset.bound = '1';
-    modal.addEventListener('click', (e)=>{
-      if(e.target === modal) closeBlockCardModal();
-    });
-  }
+  if(cancel) cancel.onclick = closeBlockCardModal;
+  if(confirm) confirm.onclick = confirmBlockCard;
+  if(modal) modal.onclick = (e)=>{ if(e.target === modal) closeBlockCardModal(); };
 }
 
 /* =====================
@@ -1688,6 +1936,12 @@ function initNav(){
         p.classList.toggle('active', p.id === `page-${page}`);
       });
       navButtons.forEach(b=>b.classList.toggle('active', b === btn));
+      
+    if(page === 'carte'){
+       initCardControls();
+      initBlockCardModal();
+      initCvcAuthModal();
+}
     });
   });
 }
@@ -1839,29 +2093,25 @@ function initMovementsFilters(){
 
 function initCardControls(){
   const flip = document.getElementById('flipCardBtn');
-  const card3d = document.getElementById('card3d');
-  if(flip && flip.dataset.bound !== '1'){
-    flip.dataset.bound = '1';
-    flip.addEventListener('click', ()=>{
+  if(flip){
+    flip.onclick = ()=>{
       if(cvcTimer) return;
       openCvcAuthModal();
-    });
+    };
   }
 
   const toggleExpiry = document.getElementById('toggleExpiry');
-  if(toggleExpiry && toggleExpiry.dataset.bound !== '1'){
-    toggleExpiry.dataset.bound = '1';
-    toggleExpiry.addEventListener('click', ()=>{
+  if(toggleExpiry){
+    toggleExpiry.onclick = ()=>{
       cardExpiryVisible = !cardExpiryVisible;
       saveUIPrefs({ showExpiry: cardExpiryVisible });
       renderCardsSection();
-    });
+    };
   }
 
   const freeze = document.getElementById('freezeBtn');
-  if(freeze && freeze.dataset.bound !== '1'){
-    freeze.dataset.bound = '1';
-    freeze.addEventListener('click', async ()=>{
+  if(freeze){
+    freeze.onclick = async ()=>{
       if(!selectedCardId) return;
       const card = carte.find(c=>c.id===selectedCardId);
       if(!card) return;
@@ -1869,22 +2119,20 @@ function initCardControls(){
       await api.updateCard(card.id, { status: newStatus });
       renderCardsSection();
       notify(newStatus === 'frozen' ? 'Carta congelata' : 'Carta riattivata');
-    });
+    };
   }
 
   const block = document.getElementById('blockBtn');
-  if(block && block.dataset.bound !== '1'){
-    block.dataset.bound = '1';
-    block.addEventListener('click', async ()=>{
+  if(block){
+    block.onclick = ()=>{
       if(!selectedCardId) return;
       openBlockCardModal();
-    });
+    };
   }
 
   const replace = document.getElementById('replaceBtn');
-  if(replace && replace.dataset.bound !== '1'){
-    replace.dataset.bound = '1';
-    replace.addEventListener('click', async ()=>{
+  if(replace){
+    replace.onclick = async ()=>{
       if(!selectedCardId) return;
       const card = carte.find(c=>c.id===selectedCardId);
       if(!card) return;
@@ -1896,9 +2144,10 @@ function initCardControls(){
         status: 'active'
       };
       await api.updateCard(card.id, patch);
+      resetCvcState();
       renderCardsSection();
       notify('Sostituzione richiesta');
-    });
+    };
   }
 }
 
